@@ -1,34 +1,3 @@
-### Описание
-
-Galène является сервером, предназначенным для организации видеоконференций. Этот сервер полностью адаптирован для русскоязычных пользователей. В него включен дополнительный режим "Только камера". Были внесены изменения в цветовую палитру, а также проведены различные мелкие корректировки в верстке.
-
-Главная страница была переработана: теперь на ней появился логотип и генератор ссылок, предназначенный для групп с активированными подгруппами. Брендирование было выполнено в качестве примера, поэтому вы можете самостоятельно отредактировать логотип и favicon, чтобы они соответствовали вашим предпочтениям.
-
-<p align="center">
- <img src="https://raw.githubusercontent.com/zerolabnet/galene-ru/ru/docs/01-scr.png" width="100%">
-</p>
-
-### Установка, используя docker
-
-```bash
-docker run -d \
---network host \
---name galene \
---restart=unless-stopped \
--e GALENE_HTTP=:443 \
--e GALENE_TURN=:10000 \
--e GALENE_DATA=/data \
--e GALENE_GROUPS=/groups \
--v /data/galene/data:/data \
--v /data/galene/groups:/groups \
--v /data/galene/static:/opt/galene/static \
-zerolabnet/galene:latest
-```
-
-Чтобы обеспечить возможность легкой правки, статические файлы переносятся в директорию, смонтированную для этой цели.
-
----
-
 Galene is a videoconferencing server that is easy to deploy and requires
 moderate server resources.  It is described at <https://galene.org>.
 
