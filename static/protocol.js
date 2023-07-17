@@ -259,7 +259,7 @@ function ServerConnection() {
  * be called when the connection is effectively closed.
  */
 ServerConnection.prototype.close = function() {
-    this.socket && this.socket.close(1000, 'Close requested by client');
+    this.socket && this.socket.close(1000, 'Закрытие запрошено клиентом');
     this.socket = null;
 };
 
@@ -270,7 +270,7 @@ ServerConnection.prototype.close = function() {
 ServerConnection.prototype.send = function(m) {
     if(!this.socket || this.socket.readyState !== this.socket.OPEN) {
         // send on a closed socket doesn't throw
-        throw(new Error('Connection is not open'));
+        throw(new Error('Соединение не открыто'));
     }
     return this.socket.send(JSON.stringify(m));
 };
@@ -285,7 +285,7 @@ ServerConnection.prototype.send = function(m) {
 ServerConnection.prototype.connect = async function(url) {
     let sc = this;
     if(sc.socket) {
-        sc.socket.close(1000, 'Reconnecting');
+        sc.socket.close(1000, 'Повторное подключение');
         sc.socket = null;
     }
 
@@ -326,7 +326,7 @@ ServerConnection.prototype.connect = async function(url) {
             sc.username = null;
             if(sc.onclose)
                 sc.onclose.call(sc, e.code, e.reason);
-            reject(new Error('websocket close ' + e.code + ' ' + e.reason));
+            reject(new Error('закрытие веб-сокета ' + e.code + ' ' + e.reason));
         };
         this.socket.onmessage = function(e) {
             let m = JSON.parse(e.data);
@@ -371,7 +371,7 @@ ServerConnection.prototype.connect = async function(url) {
                     sc.rtcConfiguration = null;
                 } else if(m.kind === 'join' || m.kind == 'change') {
                     if(m.kind === 'join' && sc.group) {
-                        throw new Error('Joined multiple groups');
+                        throw new Error('Присоединился к нескольким группам');
                     } else if(m.kind === 'change' && m.group != sc.group) {
                         console.warn('join(change) for inconsistent group');
                         break;
@@ -525,7 +525,7 @@ ServerConnection.prototype.join = async function(group, username, credentials, d
             });
             if(!r.ok)
                 throw new Error(
-                    `The authorisation server said ${r.status} ${r.statusText}`,
+                    `Сервер авторизации ответил ошибкой ${r.status} ${r.statusText}`,
                 );
             if(r.status === 204) {
                 // no data, fallback to password auth
@@ -535,7 +535,7 @@ ServerConnection.prototype.join = async function(group, username, credentials, d
             let ctype = r.headers.get("Content-Type");
             if(!ctype)
                 throw new Error(
-                    "The authorisation server didn't return a content type",
+                    "Сервер авторизации не вернул тип содержимого",
                 );
             let semi = ctype.indexOf(";");
             if(semi >= 0)
@@ -546,17 +546,17 @@ ServerConnection.prototype.join = async function(group, username, credentials, d
                 let data = await r.text();
                 if(!data)
                     throw new Error(
-                        "The authorisation server returned empty token",
+                        "Сервер авторизации вернул пустой токен",
                     );
                 m.token = data;
                 break;
             default:
-                throw new Error(`The authorisation server returned ${ctype}`);
+                throw new Error(`Сервер авторизации вернул ${ctype}`);
                 break;
             }
             break;
         default:
-            throw new Error(`Unknown credentials type ${credentials.type}`);
+            throw new Error(`Неизвестный тип учетной записи ${credentials.type}`);
         }
     }
 
@@ -646,12 +646,12 @@ ServerConnection.prototype.newUpStream = function(localId) {
         throw new Error('Eek!');
 
     if(typeof RTCPeerConnection === 'undefined')
-        throw new Error("This browser doesn't support WebRTC");
+        throw new Error("Этот браузер не поддерживает WebRTC");
 
 
     let pc = new RTCPeerConnection(sc.getRTCConfiguration());
     if(!pc)
-        throw new Error("Couldn't create peer connection");
+        throw new Error("Не удалось создать одноранговое подключение");
 
     let oldId = null;
     if(localId) {
@@ -866,7 +866,7 @@ ServerConnection.prototype.gotOffer = async function(id, label, source, username
 
         let answer = await c.pc.createAnswer();
         if(!answer)
-            throw new Error("Didn't create answer");
+            throw new Error("Не создал ответ");
         await c.pc.setLocalDescription(answer);
         this.send({
             type: 'answer',
@@ -900,7 +900,7 @@ ServerConnection.prototype.gotOffer = async function(id, label, source, username
 ServerConnection.prototype.gotAnswer = async function(id, sdp) {
     let c = this.up[id];
     if(!c)
-        throw new Error('unknown up stream');
+        throw new Error('неизвестный исходящий поток данных');
     try {
         await c.pc.setRemoteDescription({
             type: 'answer',
@@ -930,7 +930,7 @@ ServerConnection.prototype.gotAnswer = async function(id, sdp) {
 ServerConnection.prototype.gotRenegotiate = function(id) {
     let c = this.up[id];
     if(!c)
-        throw new Error('unknown up stream');
+        throw new Error('неизвестный исходящий поток данных');
     c.restartIce();
 };
 
@@ -958,7 +958,7 @@ ServerConnection.prototype.gotClose = function(id) {
 ServerConnection.prototype.gotAbort = function(id) {
     let c = this.up[id];
     if(!c)
-        throw new Error('unknown up stream');
+        throw new Error('неизвестный исходящий поток данных');
     c.close();
 };
 
@@ -975,7 +975,7 @@ ServerConnection.prototype.gotRemoteIce = async function(id, candidate) {
     if(!c)
         c = this.down[id];
     if(!c)
-        throw new Error('unknown stream');
+        throw new Error('неизвестный поток данных');
     if(c.pc.remoteDescription)
         await c.pc.addIceCandidate(candidate).catch(console.warn);
     else
@@ -1259,7 +1259,7 @@ function recomputeUserStreams(sc, id) {
 Stream.prototype.abort = function() {
     let c = this;
     if(c.up)
-        throw new Error("Abort called on an up stream");
+        throw new Error("Вызвано прерывание при отправке данных");
     c.sc.send({
         type: 'abort',
         id: c.id,
@@ -1336,14 +1336,14 @@ Stream.prototype.flushRemoteIceCandidates = async function () {
 Stream.prototype.negotiate = async function (restartIce) {
     let c = this;
     if(!c.up)
-        throw new Error('not an up stream');
+        throw new Error('не исходящий поток данных');
 
     let options = {};
     if(restartIce)
         options = {iceRestart: true};
     let offer = await c.pc.createOffer(options);
     if(!offer)
-        throw(new Error("Didn't create offer"));
+        throw(new Error("Не создал предложение"));
     await c.pc.setLocalDescription(offer);
 
     c.sc.send({
@@ -1691,13 +1691,13 @@ TransferredFile.prototype.close = function() {
 TransferredFile.prototype.bufferData = function(data) {
     let f = this;
     if(f.up)
-        throw new Error('buffering data in the wrong direction');
+        throw new Error('буферизация данных в неправильном направлении');
     if(data instanceof Blob) {
         f.datalen += data.size;
     } else if(data instanceof ArrayBuffer) {
         f.datalen += data.byteLength;
     } else {
-        throw new Error('unexpected type for received data');
+        throw new Error('неизвестный тип для полученных данных');
     }
     f.data.push(data);
 }
@@ -1710,10 +1710,10 @@ TransferredFile.prototype.bufferData = function(data) {
 TransferredFile.prototype.getBufferedData = function() {
     let f = this;
     if(f.up)
-        throw new Error('buffering data in wrong direction');
+        throw new Error('буферизация данных в неправильном направлении');
     let blob = new Blob(f.data, {type: f.mimetype});
     if(blob.size != f.datalen)
-        throw new Error('Inconsistent data size');
+        throw new Error('Несогласованный размер данных');
     f.data = [];
     f.datalen = 0;
     return blob;
@@ -1792,7 +1792,7 @@ ServerConnection.prototype.sendFile = function(id, file) {
     let fileid = newRandomId();
     let user = sc.users[id];
     if(!user)
-        throw new Error('offering upload to unknown user');
+        throw new Error('предлагается выгрузка неизвестному пользователю');
     let f = new TransferredFile(
         sc, id, fileid, true, user.username, file.name, file.type, file.size,
     );
@@ -1802,7 +1802,7 @@ ServerConnection.prototype.sendFile = function(id, file) {
         if(sc.onfiletransfer)
             sc.onfiletransfer.call(sc, f);
         else
-            throw new Error('this client does not implement file transfer');
+            throw new Error('данный клиент не осуществляет передачу файлов');
     } catch(e) {
         f.cancel(e);
         return;
@@ -1829,12 +1829,12 @@ ServerConnection.prototype.sendFile = function(id, file) {
 TransferredFile.prototype.receive = async function() {
     let f = this;
     if(f.up)
-        throw new Error('Receiving in wrong direction');
+        throw new Error('Прием в неправильном направлении');
     if(f.pc)
-        throw new Error('Download already in progress');
+        throw new Error('Загрузка уже выполняется');
     let pc = new RTCPeerConnection(f.sc.getRTCConfiguration());
     if(!pc) {
-        let err = new Error("Couldn't create peer connection");
+        let err = new Error("Не удалось создать одноранговое соединение");
         f.fail(err);
         return;
     }
@@ -1871,7 +1871,7 @@ TransferredFile.prototype.receive = async function() {
     };
     let offer = await pc.createOffer();
     if(!offer) {
-        f.cancel(new Error("Couldn't create offer"));
+        f.cancel(new Error("Не удалось создать предложение"));
         return;
     }
     await pc.setLocalDescription(offer);
@@ -1891,12 +1891,12 @@ TransferredFile.prototype.receive = async function() {
 TransferredFile.prototype.answer = async function(sdp) {
     let f = this;
     if(!f.up)
-        throw new Error('Sending file in wrong direction');
+        throw new Error('Отправка файла в неправильном направлении');
     if(f.pc)
-        throw new Error('Transfer already in progress');
+        throw new Error('Передача уже осуществляется');
     let pc = new RTCPeerConnection(f.sc.getRTCConfiguration());
     if(!pc) {
-        let err = new Error("Couldn't create peer connection");
+        let err = new Error("Не удалось создать одноранговое соединение");
         f.fail(err);
         return;
     }
@@ -1919,7 +1919,7 @@ TransferredFile.prototype.answer = async function(sdp) {
     };
     pc.ondatachannel = function(e) {
         if(f.dc) {
-            f.cancel(new Error('Duplicate datachannel'));
+            f.cancel(new Error('Дублирование канала данных'));
             return;
         }
         f.dc = /** @type{RTCDataChannel} */(e.channel);
@@ -1938,7 +1938,7 @@ TransferredFile.prototype.answer = async function(sdp) {
                 f.dc.onerror = null;
                 f.close();
             } else {
-                f.cancel(new Error('unexpected data from receiver'));
+                f.cancel(new Error('непредвиденные данные от получателя'));
             }
         }
         f.send().catch(e => f.cancel(e));
@@ -1951,7 +1951,7 @@ TransferredFile.prototype.answer = async function(sdp) {
 
     let answer = await pc.createAnswer();
     if(!answer)
-        throw new Error("Couldn't create answer");
+        throw new Error("Не удалось создать ответ");
     await pc.setLocalDescription(answer);
     f.sc.userMessage('filetransfer', f.userid, {
         type: 'answer',
@@ -1969,7 +1969,7 @@ TransferredFile.prototype.answer = async function(sdp) {
 TransferredFile.prototype.send = async function() {
     let f = this;
     if(!f.up)
-        throw new Error('sending in wrong direction');
+        throw new Error('отправка в неправильном направлении');
     let r = f.file.stream().getReader();
 
     f.dc.bufferedAmountLowThreshold = 65536;
@@ -1979,12 +1979,12 @@ TransferredFile.prototype.send = async function() {
         while(f.dc.bufferedAmount > f.dc.bufferedAmountLowThreshold) {
             await new Promise((resolve, reject) => {
                 if(!f.dc) {
-                    reject(new Error('File is closed.'));
+                    reject(new Error('Файл закрыт.'));
                     return;
                 }
                 f.dc.onbufferedamountlow = function(e) {
                     if(!f.dc) {
-                        reject(new Error('File is closed.'));
+                        reject(new Error('Файл закрыт.'));
                         return;
                     }
                     f.dc.onbufferedamountlow = null;
@@ -2005,7 +2005,7 @@ TransferredFile.prototype.send = async function() {
             break;
         let data = v.value;
         if(!(data instanceof Uint8Array))
-            throw new Error('Unexpected type for chunk');
+            throw new Error('Недопустимый тип для блока данных');
         /* Base SCTP only supports up to 16kB data chunks.  There are
            extensions to handle larger chunks, but they don't interoperate
            between browsers, so we chop the file into small pieces. */
@@ -2028,7 +2028,7 @@ TransferredFile.prototype.send = async function() {
 TransferredFile.prototype.receiveFile = async function(sdp) {
     let f = this;
     if(f.up)
-        throw new Error('Receiving in wrong direction');
+        throw new Error('Получение в неправильном направлении');
     await f.pc.setRemoteDescription({
         type: 'answer',
         sdp: sdp,
@@ -2044,7 +2044,7 @@ TransferredFile.prototype.receiveFile = async function(sdp) {
 TransferredFile.prototype.receiveData = async function(data) {
     let f = this;
     if(f.up)
-        throw new Error('Receiving in wrong direction');
+        throw new Error('Получение в неправильном направлении');
     f.bufferData(data);
 
     if(f.datalen < f.size) {

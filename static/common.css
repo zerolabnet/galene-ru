@@ -6,15 +6,6 @@ h1 {
     display: inline;
 }
 
-.signature {
-    border-top: solid;
-    padding-top: 0;
-    border-width: thin;
-    clear: both;
-    min-height: 3.125rem;
-    text-align: center;
-}
-
 body {
     overflow-x: hidden;
 }
@@ -29,7 +20,7 @@ body {
     line-height: 1.5;
     color: #687281;
     text-align: left;
-    background-color: #eff3f9;
+    background-color: #f7f7f7;
 }
 
 *, :after, :before {
