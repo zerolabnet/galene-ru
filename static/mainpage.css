@@ -1,12 +1,11 @@
 body {
-    /* Used to move footer at bottom of the page */
-    display: flex;
-    flex-direction: column;
+    width: 80vw;
+    margin: 0 auto;
 }
 
 #errormessage {
     color: red;
-    font-weight: bold;
+    font-weight: 200;
     height: 12px;
 }
 
@@ -18,12 +17,13 @@ body {
 }
 
 .navbar-brand {
-  margin-bottom: 5rem;
+  margin-bottom: 2rem;
 }
 
 .home {
   margin-bottom: auto;
   padding: 1.875rem;
+  text-align: center;
 }
 
 #public-groups-table tr a{
@@ -33,20 +33,72 @@ body {
 
 a {
     text-decoration: none;
-    color: #0058e4;
+    color: #52ac6b;
 }
 
 a:hover {
-    color: #0a429c;
+    color: #4c9f63;
 }
 
 label {
     display: block;
 }
 
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px 0 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  width: 100%;
+}
+
+#generated-link a {
+  color: #52ac6b;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#generated-link a:hover {
+  color: #4c9f63;
+}
+
 @media only screen and (max-device-width: 768px) {
+    body {
+        width: 100vw;
+        padding: 20px 0;
+    }
+
     .home {
         padding: 0.625rem;
     }
 
+    .navbar-brand, label, a, #public-groups-table tr a {
+        font-size: 1.2em;
+    }
+
+    input, button {
+        font-size: 1.2em;
+        padding: 0.5em;
+    }
+
+    .main-container {
+        padding: 10px;
+        width: 100%;
+        box-shadow: none;
+    }
+
+    #group {
+        width: 50%;
+    }
 }
