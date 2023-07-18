@@ -2719,7 +2719,7 @@ function gotUserMessage(id, dest, username, time, privileged, kind, error, messa
             return;
         }
         setLocalMute(true, true);
-        let by = username ? ' by ' + username : '';
+        let by = username ? ' пользователь ' + username : '';
         displayWarning(`Вам отключил микрофон${by}`);
         break;
     case 'clearchat':
