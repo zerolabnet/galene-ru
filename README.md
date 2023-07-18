@@ -17,6 +17,7 @@ docker run -d \
 --restart=unless-stopped \
 -e GALENE_HTTP=:443 \
 -e GALENE_TURN=:10000 \
+-e GALENE_UDP_RANGE=10001-20000 \
 -e GALENE_DATA=/data \
 -e GALENE_GROUPS=/groups \
 -v /data/galene/data:/data \
