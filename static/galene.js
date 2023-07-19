@@ -2801,7 +2801,7 @@ function formatToken(token, details) {
         }
     } else {
         if(token.group)
-            togroup = ' на группу ' + token.group;
+            togroup = ' в группу ' + token.group;
     }
     let since = '';
     if(token["not-before"])
