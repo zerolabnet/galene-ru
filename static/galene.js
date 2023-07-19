@@ -2795,9 +2795,9 @@ function formatToken(token, details) {
             by = ' выпущено ' + token.issuedBy;
         if(token.issuedAt) {
             if(by === '')
-                by = ' выпущено на ' + token.issuedAt;
+                by = ' выпущено ' + token.issuedAt;
             else
-                by = by + ' на ' + (new Date(token.issuedAt)).toLocaleString();
+                by = by + ' ' + (new Date(token.issuedAt)).toLocaleString();
         }
     } else {
         if(token.group)
