@@ -128,3 +128,12 @@ record_save.addEventListener('click', () => {
         console.log(`${a.download} save option shown`);
     }, 100);
 });
+function notSupportsGetDisplayMedia() {
+  var supportsGetDisplayMedia = typeof navigator.mediaDevices.getDisplayMedia !== 'undefined';
+  return !supportsGetDisplayMedia;
+}
+
+if (notSupportsGetDisplayMedia()) {
+  var fieldset = document.getElementById("recordFieldset");
+  fieldset.remove();
+}
