@@ -199,7 +199,15 @@
               <input id="hqaudiobox" type="checkbox"/>
               <label for="hqaudiobox">Высококачественный звук</label>
             </form>
+          </fieldset>
 
+          <fieldset>
+            <legend>Запись экрана</legend>
+              <span id="recordStatus"></span>
+              <button class="recordBtn" id="recordStart">Начать запись</button>
+              <button class="recordBtn" id="recordPause" disabled>Приостановить</button>
+              <button class="recordBtn" id="recordStop" disabled>Остановить</button>
+              <button class="recordBtn" id="recordSave" disabled>Сохранить</button>
           </fieldset>
         </div>
 
@@ -305,5 +313,6 @@
     <script src="/external/toastify/toastify.js" defer></script>
     <script src="/external/contextual/contextual.js" defer></script>
     <script src="/galene.js" defer></script>
+    <script src="/rec.js" defer></script>
   </body>
 </html>

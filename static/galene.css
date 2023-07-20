@@ -1343,3 +1343,25 @@ header .collapse:hover {
 #invite-dialog {
     background-color: #eee;
 }
+
+.recordBtn {
+  width: 100%;
+  padding: 10px 20px;
+  background-color: #f7f7f7;
+  border: none;
+  cursor: pointer;
+}
+
+.recordBtn:hover {
+  background-color: #d9d9d9;
+}
+
+.recordBtn:active {
+  background-color: #bfbfbf;
+}
+
+.recordBtn:disabled {
+  background-color: #fff;
+  color: #999;
+  cursor: not-allowed;
+}
