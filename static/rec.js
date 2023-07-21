@@ -128,9 +128,11 @@ record_save.addEventListener('click', () => {
         console.log(`${a.download} save option shown`);
     }, 100);
 });
+
 function notSupportsGetDisplayMedia() {
+  var isSafari = navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('Chrome') === -1;
   var supportsGetDisplayMedia = typeof navigator.mediaDevices.getDisplayMedia !== 'undefined';
-  return !supportsGetDisplayMedia;
+  return isSafari || !supportsGetDisplayMedia;
 }
 
 if (notSupportsGetDisplayMedia()) {
