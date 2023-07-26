@@ -289,6 +289,7 @@
 }
 
 .reply {
+    display: flex;
     height: 53px;
     width: 100%;
     background-color: #eae7e5;
@@ -311,7 +312,7 @@
 
 textarea.form-reply {
     height: 2.1em;
-    margin-right: .5em;
+    margin-right: .2em;
 }
 
 .form-reply {
@@ -816,6 +817,8 @@ h1 {
 
 #inputform {
     display: flex;
+    flex: 1;
+    align-items: center;
 }
 
 #box {
@@ -848,6 +851,7 @@ h1 {
 }
 
 #input {
+    flex: 1;
     width: 100%;
     border: none;
     resize: none;
@@ -856,6 +860,10 @@ h1 {
 
 #input:focus {
     outline: none;
+}
+
+#inputbutton {
+    margin-left: .2em;
 }
 
 #inputbutton:focus {
@@ -1364,4 +1372,15 @@ header .collapse:hover {
   background-color: #fff;
   color: #999;
   cursor: not-allowed;
+}
+
+.emoji-container {
+  display: flex;
+  align-items: center;
+}
+
+.emoji {
+  font-size: 16px;
+  padding: 2px;
+  cursor: pointer;
 }

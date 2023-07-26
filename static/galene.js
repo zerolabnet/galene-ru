@@ -2472,7 +2472,7 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
 
     let input = /** @type{HTMLTextAreaElement} */
         (document.getElementById('input'));
-    input.placeholder = 'Для получения справки введите /help';
+    input.placeholder = '/help – для справки';
     setTimeout(() => {input.placeholder = '';}, 8000);
 
     if(status.locked)
