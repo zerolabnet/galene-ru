@@ -1353,34 +1353,29 @@ header .collapse:hover {
 }
 
 .recordBtn {
-  width: 100%;
-  padding: 10px 20px;
-  background-color: #f7f7f7;
-  border: none;
-  cursor: pointer;
+    width: 100%;
+    padding: 10px 20px;
+    background-color: #f7f7f7;
+    border: none;
+    cursor: pointer;
 }
 
 .recordBtn:hover {
-  background-color: #d9d9d9;
+    background-color: #d9d9d9;
 }
 
 .recordBtn:active {
-  background-color: #bfbfbf;
+    background-color: #bfbfbf;
 }
 
 .recordBtn:disabled {
-  background-color: #fff;
-  color: #999;
-  cursor: not-allowed;
-}
-
-.emoji-container {
-  display: flex;
-  align-items: center;
+    background-color: #fff;
+    color: #999;
+    cursor: not-allowed;
 }
 
 .emoji {
-  font-size: 16px;
-  padding: 2px;
-  cursor: pointer;
+    font-size: 16px;
+    padding: 2px;
+    cursor: pointer;
 }
