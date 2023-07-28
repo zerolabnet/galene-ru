@@ -1379,3 +1379,27 @@ header .collapse:hover {
     padding: 2px;
     cursor: pointer;
 }
+
+.additional-emoji-button {
+  display: inline-block;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.additional-emoji-popup {
+  display: none;
+  position: absolute;
+  bottom: 40px;
+  right: 0;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  padding: 5px;
+  z-index: 1;
+}
+
+.additional-emoji-content {
+  display: flex;
+}
