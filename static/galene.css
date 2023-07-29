@@ -403,6 +403,7 @@ textarea.form-reply {
     font-weight: 400;
     font-size: 14px;
     color: #202035;
+    font-family: "Noto Color Emoji", OpenMoji, sans-serif;
 }
 
 .message-header {
@@ -856,6 +857,7 @@ h1 {
     border: none;
     resize: none;
     overflow-y: hidden;
+    font-family: "Noto Color Emoji", OpenMoji, sans-serif;
 }
 
 #input:focus {
@@ -1381,25 +1383,27 @@ header .collapse:hover {
 }
 
 .additional-emoji-button {
-  display: inline-block;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
+    display: inline-block;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: "Noto Color Emoji", OpenMoji, sans-serif;
 }
 
 .additional-emoji-popup {
-  display: none;
-  position: absolute;
-  bottom: 40px;
-  right: 0;
-  background-color: #f9f9f9;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
-  padding: 5px;
-  z-index: 1;
+    display: none;
+    position: absolute;
+    bottom: 40px;
+    right: 0;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    padding: 5px;
+    z-index: 1;
+    font-family: "Noto Color Emoji", OpenMoji, sans-serif;
 }
 
 .additional-emoji-content {
-  display: flex;
+    display: flex;
 }
