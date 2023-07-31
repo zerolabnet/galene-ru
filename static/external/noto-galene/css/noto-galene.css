@@ -1,0 +1,14 @@
+@font-face {
+    font-family: "Noto-galene";
+    src: url("../webfonts/Noto-galene-fallback.woff2") format(woff2);
+    src: url("../webfonts/Noto-galene-COLRv1.woff2") format(woff2) tech(color-COLRv1),
+         url("../webfonts/Noto-galene-SVG.woff2") format(woff2);
+}
+
+/*Checking if the user agent supports color-COLRv1 technology*/
+/*@supports font-tech(color-COLRv1) {
+  @font-face {
+    font-family: "Noto-galene";
+    src: url("../webfonts/Noto-galene-COLRv1.woff2") format(woff2) tech(color-COLRv1);
+  }
+}*/

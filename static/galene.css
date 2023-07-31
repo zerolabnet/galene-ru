@@ -403,6 +403,7 @@ textarea.form-reply {
     font-weight: 400;
     font-size: 14px;
     color: #202035;
+    font-family: "Noto-galene", sans-serif;
 }
 
 .message-header {
@@ -856,6 +857,7 @@ h1 {
     border: none;
     resize: none;
     overflow-y: hidden;
+    font-family: "Noto-galene", sans-serif;
 }
 
 #input:focus {
@@ -1199,10 +1201,6 @@ header .collapse:hover {
     .coln-right .collapse-video, .coln-right .show-video {
         display: none;
     }
-
-    .message-content, #input, .additional-emoji-button, .additional-emoji-popup {
-        font-family: "Noto Color Emoji", OpenMoji, sans-serif;
-    }
 }
 
 @media only screen and (max-width: 1024px) {
@@ -1389,6 +1387,7 @@ header .collapse:hover {
     border: none;
     cursor: pointer;
     font-size: 16px;
+    font-family: "Noto-galene", sans-serif;
 }
 
 .additional-emoji-popup {
@@ -1401,6 +1400,7 @@ header .collapse:hover {
     border-radius: 5px;
     padding: 5px;
     z-index: 1;
+    font-family: "Noto-galene", sans-serif;
 }
 
 .additional-emoji-content {
