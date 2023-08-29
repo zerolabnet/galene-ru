@@ -298,7 +298,7 @@ ServerConnection.prototype.connect = async function(url) {
         this.socket.onopen = function(e) {
             sc.send({
                 type: 'handshake',
-                version: ["2"],
+                version: ['2'],
                 id: sc.id,
             });
             if(sc.onconnected)
@@ -332,9 +332,10 @@ ServerConnection.prototype.connect = async function(url) {
             let m = JSON.parse(e.data);
             switch(m.type) {
             case 'handshake': {
-                if(m.version === "2")
-                    sc.version = m.version;
-                else {
+                if((m.version instanceof Array) && m.version.includes('2')) {
+                    sc.version = '2';
+                } else {
+                    sc.version = null;
                     console.error(`Unknown protocol version ${m.version}`);
                     throw new Error(`Unknown protocol version ${m.version}`);
                 }
@@ -1215,10 +1216,11 @@ Stream.prototype.close = function(replace) {
     let changed = recomputeUserStreams(c.sc, userid);
     if(changed && c.sc.onuser)
         c.sc.onuser.call(c.sc, userid, "change");
-    c.sc = null;
 
     if(c.onclose)
         c.onclose.call(c, replace);
+
+    c.sc = null;
 };
 
 /**
@@ -1466,7 +1468,7 @@ Stream.prototype.updateStats = async function() {
 
         if(report) {
             for(let r of report.values()) {
-                if(rtid && r.type === 'track') {
+                if(rtid && r.type === 'inbound-rtp') {
                     if(!('totalAudioEnergy' in r))
                         continue;
                     if(!stats[rtid])
