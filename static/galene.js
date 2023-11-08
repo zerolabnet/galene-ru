@@ -1391,7 +1391,9 @@ function replaceCameraStream() {
 async function addLocalMedia(localId) {
     let settings = getSettings();
 
+    /** @type{boolean|MediaTrackConstraints} */
     let audio = settings.audio ? {deviceId: settings.audio} : false;
+    /** @type{boolean|MediaTrackConstraints} */
     let video = settings.video ? {deviceId: settings.video} : false;
 
     if(video) {
@@ -1402,6 +1404,8 @@ async function addLocalMedia(localId) {
         } else if(settings.blackboardMode) {
             video.width = { min: 640, ideal: 1920 };
             video.height = { min: 400, ideal: 1080 };
+        } else {
+            video.aspectRatio = { ideal: 4/3 };
         }
     }
 
