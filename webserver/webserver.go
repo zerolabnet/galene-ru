@@ -133,11 +133,17 @@ func httpError(w http.ResponseWriter, err error) {
 		return
 	}
 	if os.IsPermission(err) {
-		http.Error(w, "403 forbidden", http.StatusForbidden)
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	var mberr *http.MaxBytesError
+	if errors.As(err, &mberr) {
+		http.Error(w, "Request body too large",
+			http.StatusRequestEntityTooLarge)
 		return
 	}
 	log.Printf("HTTP server error: %v", err)
-	http.Error(w, "500 Internal Server Error",
+	http.Error(w, "Internal server error",
 		http.StatusInternalServerError)
 }
 
@@ -354,16 +360,7 @@ func groupBase(r *http.Request) (string, error) {
 		return "", nil
 	}
 	if conf.ProxyURL != "" {
-		u, err := url.Parse(conf.ProxyURL)
-		if err != nil {
-			return "", err
-		}
-		base := url.URL{
-			Scheme: u.Scheme,
-			Host:   u.Host,
-			Path:   path.Join(u.Path, "/group/"),
-		}
-		return base.String(), nil
+		return url.JoinPath(conf.ProxyURL, "/group/")
 	}
 	scheme := "https"
 	if r.TLS == nil {

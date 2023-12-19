@@ -181,12 +181,9 @@ func (g *Group) API() (*webrtc.API, error) {
 func fmtpValue(fmtp, key string) string {
 	fields := strings.Split(fmtp, ";")
 	for _, f := range fields {
-		kv := strings.SplitN(f, "=", 2)
-		if len(kv) != 2 {
-			continue
-		}
-		if kv[0] == key {
-			return kv[1]
+		k, v, found := strings.Cut(f, "=")
+		if found && k == key {
+			return v
 		}
 	}
 	return ""
@@ -1007,13 +1004,13 @@ func maxHistoryAge(desc *Description) time.Duration {
 	return DefaultMaxHistoryAge
 }
 
-func openDescriptionFile(name string) (*os.File, string, bool, error) {
+func getDescriptionFile[T any](name string, get func(string) (T, error)) (T, string, bool, error) {
 	isParent := false
 	for name != "" {
 		fileName := filepath.Join(
 			Directory, path.Clean("/"+name)+".json",
 		)
-		r, err := os.Open(fileName)
+		r, err := get(fileName)
 		if !os.IsNotExist(err) {
 			return r, fileName, isParent, err
 		}
@@ -1021,24 +1018,8 @@ func openDescriptionFile(name string) (*os.File, string, bool, error) {
 		name, _ = path.Split(name)
 		name = strings.TrimRight(name, "/")
 	}
-	return nil, "", false, os.ErrNotExist
-}
-
-func statDescriptionFile(name string) (os.FileInfo, string, bool, error) {
-	isParent := false
-	for name != "" {
-		fileName := filepath.Join(
-			Directory, path.Clean("/"+name)+".json",
-		)
-		fi, err := os.Stat(fileName)
-		if !os.IsNotExist(err) {
-			return fi, fileName, isParent, err
-		}
-		isParent = true
-		name, _ = path.Split(name)
-		name = strings.TrimRight(name, "/")
-	}
-	return nil, "", false, os.ErrNotExist
+	var zero T
+	return zero, "", false, os.ErrNotExist
 }
 
 // descriptionMatch returns true if the description hasn't changed between
@@ -1057,7 +1038,7 @@ func descriptionMatch(d1, d2 *Description) bool {
 // descriptionUnchanged returns true if a group's description hasn't
 // changed since it was last read.
 func descriptionUnchanged(name string, desc *Description) bool {
-	fi, fileName, _, err := statDescriptionFile(name)
+	fi, fileName, _, err := getDescriptionFile(name, os.Stat)
 	if err != nil || fileName != desc.FileName {
 		return false
 	}
@@ -1082,7 +1063,7 @@ func GetDescription(name string) (*Description, error) {
 
 // readDescription reads a group's description from disk
 func readDescription(name string) (*Description, error) {
-	r, fileName, isParent, err := openDescriptionFile(name)
+	r, fileName, isParent, err := getDescriptionFile(name, os.Open)
 	if err != nil {
 		return nil, err
 	}

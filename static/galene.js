@@ -304,7 +304,7 @@ function setConnected(connected) {
         }
         if(isSafari()) {
             /* Safari doesn't allow autoplay and omits host candidates
-             * unless there is Open one and keep it around. */
+             * unless there is an open device. */
             if(!safariStream) {
                 navigator.mediaDevices.getUserMedia({audio: true}).then(s => {
                     safariStream = s;
@@ -478,25 +478,31 @@ function setVisibility(id, visible) {
 function setButtonsVisibility() {
     let connected = serverConnection && serverConnection.socket;
     let permissions = serverConnection.permissions;
-    let present = permissions.indexOf('present') >= 0;
-    let local = !!findUpMedia('camera');
     let canWebrtc = !(typeof RTCPeerConnection === 'undefined');
+    let canPresent = canWebrtc &&
+        ('mediaDevices' in navigator) &&
+        ('getUserMedia' in navigator.mediaDevices) &&
+        permissions.indexOf('present') >= 0;
+    let canShare = canWebrtc &&
+        ('mediaDevices' in navigator) &&
+        ('getDisplayMedia' in navigator.mediaDevices) &&
+        permissions.indexOf('present') >= 0;
+    let local = !!findUpMedia('camera');
     let mediacount = document.getElementById('peers').childElementCount;
     let mobilelayout = isMobileLayout();
 
     // don't allow multiple presentations
-    setVisibility('presentbutton', canWebrtc && present && !local);
+    setVisibility('presentbutton', canPresent && !local);
     setVisibility('unpresentbutton', local);
 
-    setVisibility('mutebutton', !connected || present);
+    setVisibility('mutebutton', !connected || canPresent);
 
     // allow multiple shared documents
-    setVisibility('sharebutton', canWebrtc && present &&
-                  ('getDisplayMedia' in navigator.mediaDevices));
+    setVisibility('sharebutton', canShare);
 
-    setVisibility('mediaoptions', present);
-    setVisibility('sendform', present);
-    setVisibility('simulcastform', present);
+    setVisibility('mediaoptions', canPresent);
+    setVisibility('sendform', canPresent);
+    setVisibility('simulcastform', canPresent);
 
     setVisibility('collapse-video', mediacount && mobilelayout);
 }
@@ -864,7 +870,8 @@ async function setMediaChoices(done) {
 
     let devices = [];
     try {
-        devices = await navigator.mediaDevices.enumerateDevices();
+        if('mediaDevices' in navigator)
+            devices = await navigator.mediaDevices.enumerateDevices();
     } catch(e) {
         console.error(e);
         return;
@@ -2487,7 +2494,9 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
     else
         this.request(mapRequest(getSettings().request));
 
-    if(serverConnection.permissions.indexOf('present') >= 0 &&
+    if(('mediaDevices' in navigator) &&
+       ('getUserMedia' in navigator.mediaDevices) &&
+       serverConnection.permissions.indexOf('present') >= 0 &&
        !findUpMedia('camera')) {
         if(present) {
             if(present === 'both') {
@@ -2828,18 +2837,18 @@ function formatToken(token, details) {
 const urlRegexp = /https?:\/\/[-a-zA-Z0-9@:%/._\\+~#&()=?]+[-a-zA-Z0-9@:%/_\\+~#&()=]/g;
 
 /**
- * @param {string} line
- * @returns {Array.<Text|HTMLElement>}
+ * @param {string} text
+ * @returns {HTMLDivElement}
  */
-function formatLine(line) {
+function formatText(text) {
     let r = new RegExp(urlRegexp);
     let result = [];
     let pos = 0;
     while(true) {
-        let m = r.exec(line);
+        let m = r.exec(text);
         if(!m)
             break;
-        result.push(document.createTextNode(line.slice(pos, m.index)));
+        result.push(document.createTextNode(text.slice(pos, m.index)));
         let a = document.createElement('a');
         a.href = m[0];
         a.textContent = m[0];
@@ -2848,25 +2857,13 @@ function formatLine(line) {
         result.push(a);
         pos = m.index + m[0].length;
     }
-    result.push(document.createTextNode(line.slice(pos)));
-    return result;
-}
+    result.push(document.createTextNode(text.slice(pos)));
 
-/**
- * @param {string[]} lines
- * @returns {HTMLElement}
- */
-function formatLines(lines) {
-    let elts = [];
-    if(lines.length > 0)
-        elts = formatLine(lines[0]);
-    for(let i = 1; i < lines.length; i++) {
-        elts.push(document.createElement('br'));
-        elts = elts.concat(formatLine(lines[i]));
-    }
-    let elt = document.createElement('p');
-    elts.forEach(e => elt.appendChild(e));
-    return elt;
+    let div = document.createElement('div');
+    result.forEach(e => {
+        div.appendChild(e);
+    });
+    return div;
 }
 
 /**
@@ -2900,7 +2897,7 @@ let lastMessage = {};
  * @param {boolean} privileged
  * @param {boolean} history
  * @param {string} kind
- * @param {unknown} message
+ * @param {string|HTMLElement} message
  */
 function addToChatbox(peerId, dest, nick, time, privileged, history, kind, message) {
     let row = document.createElement('div');
@@ -2917,8 +2914,17 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
     if(dest)
         container.classList.add('message-private');
 
+    /** @type{HTMLElement} */
+    let body;
+    if(message instanceof HTMLElement) {
+        body = message;
+    } else if(typeof message === 'string') {
+        body = formatText(message);
+    } else {
+        throw new Error('Cannot add element to chatbox');
+    }
+
     if(kind !== 'me') {
-        let p = formatLines(message.toString().split('\n'));
         let doHeader = true;
         if(lastMessage.nick !== (nick || null) ||
            lastMessage.peerId !== (peerId || null) ||
@@ -2950,6 +2956,8 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
             }
         }
 
+        let p = document.createElement('p');
+        p.appendChild(body);
         p.classList.add('message-content');
         container.appendChild(p);
         lastMessage.nick = (nick || null);
@@ -2963,14 +2971,10 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
         let user = document.createElement('span');
         user.textContent = nick || '(anon)';
         user.classList.add('message-me-user');
-        let content = document.createElement('span');
-        formatLine(message.toString()).forEach(elt => {
-            content.appendChild(elt);
-        });
-        content.classList.add('message-me-content');
+        body.classList.add('message-me-content');
         container.appendChild(asterisk);
         container.appendChild(user);
-        container.appendChild(content);
+        container.appendChild(body);
         container.classList.add('message-me');
         lastMessage = {};
     }
@@ -2986,7 +2990,7 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
 }
 
 /**
- * @param {string} message
+ * @param {string|HTMLElement} message
  */
 function localMessage(message) {
     return addToChatbox(null, null, null, new Date(), false, false, '', message);

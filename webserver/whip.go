@@ -4,7 +4,6 @@ import (
 	"bytes"
 	crand "crypto/rand"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -44,16 +43,6 @@ func newId() string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
-const sdpLimit = 1024 * 1024
-
-func readLimited(r io.Reader) ([]byte, error) {
-	v, err := io.ReadAll(io.LimitReader(r, sdpLimit))
-	if len(v) == sdpLimit {
-		err = errors.New("SDP too large")
-	}
-	return v, err
-}
-
 func canPresent(perms []string) bool {
 	for _, p := range perms {
 		if p == "present" {
@@ -63,8 +52,7 @@ func canPresent(perms []string) bool {
 	return false
 }
 
-func getBearerToken(r *http.Request) string {
-	auth := r.Header.Get("Authorization")
+func parseBearerToken(auth string) string {
 	auths := strings.Split(auth, ",")
 	for _, a := range auths {
 		a = strings.Trim(a, " \t")
@@ -118,6 +106,8 @@ func whipICEServers(w http.ResponseWriter) {
 		}
 	}
 }
+
+const sdpLimit = 1024 * 1024
 
 func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	if redirect(w, r) {
@@ -181,13 +171,14 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := readLimited(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, sdpLimit))
 	if err != nil {
 		httpError(w, err)
 		return
 	}
 
-	token := getBearerToken(r)
+	token := parseBearerToken(r.Header.Get("Authorization"))
+
 	whip := "whip"
 	creds := group.ClientCredentials{
 		Username: &whip,
@@ -267,7 +258,7 @@ func whipResourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if t := c.Token(); t != "" {
-		token := getBearerToken(r)
+		token := parseBearerToken(r.Header.Get("Authorization"))
 		if token != t {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
@@ -311,7 +302,7 @@ func whipResourceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := readLimited(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, sdpLimit))
 	if err != nil {
 		httpError(w, err)
 		return
