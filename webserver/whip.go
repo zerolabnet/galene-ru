@@ -2,14 +2,16 @@ package webserver
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	crand "crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"strings"
 
@@ -20,27 +22,56 @@ import (
 	"github.com/jech/galene/rtpconn"
 )
 
-func parseWhip(pth string) (string, string) {
-	if pth != "/" {
-		pth = strings.TrimSuffix(pth, "/")
-	}
-	dir := path.Dir(pth)
-	base := path.Base(pth)
-	if base == ".whip" {
-		return dir + "/", ""
-	}
+var idSecret []byte
+var idCipher cipher.Block
 
-	if path.Base(dir) == ".whip" {
-		return path.Dir(dir) + "/", base
+func init() {
+	idSecret = make([]byte, 16)
+	_, err := crand.Read(idSecret)
+	if err != nil {
+		log.Fatalf("crand.Read: %v", err)
 	}
-
-	return "", ""
+	idCipher, err = aes.NewCipher(idSecret)
+	if err != nil {
+		log.Fatalf("NewCipher: %v", err)
+	}
 }
 
 func newId() string {
-	b := make([]byte, 16)
+	b := make([]byte, idCipher.BlockSize())
 	crand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// we obfuscate ids to avoid exposing the WHIP session URL
+func obfuscate(id string) (string, error) {
+	v, err := base64.RawURLEncoding.DecodeString(id)
+	if err != nil {
+		return "", err
+	}
+
+	if len(v) != idCipher.BlockSize() {
+		return "", errors.New("bad length")
+	}
+
+	idCipher.Encrypt(v, v)
+
+	return base64.RawURLEncoding.EncodeToString(v), nil
+}
+
+func deobfuscate(id string) (string, error) {
+	v, err := base64.RawURLEncoding.DecodeString(id)
+	if err != nil {
+		return "", err
+	}
+
+	if len(v) != idCipher.BlockSize() {
+		return "", errors.New("bad length")
+	}
+
+	idCipher.Decrypt(v, v)
+
+	return base64.RawURLEncoding.EncodeToString(v), nil
 }
 
 func canPresent(perms []string) bool {
@@ -114,8 +145,8 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pth, pthid := parseWhip(r.URL.Path)
-	if pthid != "" {
+	pth, kind, pthid := splitPath(r.URL.Path)
+	if kind != ".whip" || pthid != "/" {
 		http.Error(w, "Internal server error",
 			http.StatusInternalServerError)
 		return
@@ -129,20 +160,13 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	g, err := group.Add(name, nil)
 	if err != nil {
-		if os.IsNotExist(err) {
-			notFound(w)
-			return
-		}
-		log.Printf("group.Add: %v", err)
-		http.Error(w, "Internal server error",
-			http.StatusInternalServerError)
+		httpError(w, err)
 		return
 	}
 
 	conf, err := group.GetConfiguration()
 	if err != nil {
-		http.Error(w, "Internal server error",
-			http.StatusInternalServerError)
+		httpError(w, err)
 		return
 	}
 
@@ -186,6 +210,12 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := newId()
+	obfuscated, err := obfuscate(id)
+	if err != nil {
+		httpError(w, err)
+		return
+	}
+
 	c := rtpconn.NewWhipClient(g, id, token)
 
 	_, err = group.AddClient(g.Name(), c, creds)
@@ -195,8 +225,7 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		log.Printf("WHIP: %v", err)
-		http.Error(w, "Internal Server Error",
-			http.StatusInternalServerError)
+		httpError(w, err)
 		return
 	}
 
@@ -210,11 +239,11 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		group.DelClient(c)
 		log.Printf("WHIP offer: %v", err)
-		http.Error(w, "Internal Server Error",
-			http.StatusInternalServerError)
+		httpError(w, err)
+		return
 	}
 
-	w.Header().Set("Location", path.Join(r.URL.Path, id))
+	w.Header().Set("Location", path.Join(r.URL.Path, obfuscated))
 	w.Header().Set("Access-Control-Expose-Headers",
 		"Location, Content-Type, Link")
 	whipICEServers(w)
@@ -226,10 +255,15 @@ func whipEndpointHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func whipResourceHandler(w http.ResponseWriter, r *http.Request) {
-	pth, id := parseWhip(r.URL.Path)
-	if pth == "" || id == "" {
+	pth, kind, rest := splitPath(r.URL.Path)
+	if kind != ".whip" || rest == "" {
 		http.Error(w, "Internal server error",
 			http.StatusInternalServerError)
+		return
+	}
+	id, err := deobfuscate(rest[1:])
+	if err != nil {
+		httpError(w, err)
 		return
 	}
 
@@ -267,8 +301,7 @@ func whipResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	conf, err := group.GetConfiguration()
 	if err != nil {
-		http.Error(w, "Internal server error",
-			http.StatusInternalServerError)
+		httpError(w, err)
 		return
 	}
 

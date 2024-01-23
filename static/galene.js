@@ -3915,7 +3915,7 @@ async function serverConnect() {
 
 async function start() {
     try {
-        let r = await fetch(".status.json")
+        let r = await fetch(".status")
         if(!r.ok)
             throw new Error(`${r.status} ${r.statusText}`);
         groupStatus = await r.json()
