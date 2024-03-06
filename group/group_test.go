@@ -2,6 +2,7 @@ package group
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -42,7 +43,7 @@ func TestGroup(t *testing.T) {
 		t.Errorf("Expected [], got %v", subs)
 	}
 
-	if public := GetPublic(""); len(public) != 1 || public[0].Name != "group/subgroup" {
+	if public := GetPublic(nil); len(public) != 1 || public[0].Name != "group/subgroup" {
 		t.Errorf("Expected group/subgroup, got %v", public)
 	}
 }
@@ -157,8 +158,9 @@ func TestPermissions(t *testing.T) {
 
 	for _, c := range badClients {
 		t.Run("bad "+*c.Username, func(t *testing.T) {
+			var autherr *NotAuthorisedError
 			_, p, err := g.GetPermission(c)
-			if err != ErrNotAuthorised {
+			if !errors.As(err, &autherr) {
 				t.Errorf("GetPermission %v: %v %v", c, err, p)
 			}
 		})

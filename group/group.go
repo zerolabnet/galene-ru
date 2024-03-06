@@ -26,9 +26,25 @@ var Directory, DataDirectory string
 var UseMDNS bool
 var UDPMin, UDPMax uint16
 
-var ErrNotAuthorised = errors.New("not authorised")
-var ErrAnonymousNotAuthorised = errors.New("anonymous users not authorised in this group")
-var ErrDuplicateUsername = errors.New("this username is taken")
+type NotAuthorisedError struct {
+	err error
+}
+func (err *NotAuthorisedError) Error() string {
+	if err.err != nil {
+		return "not authorised: " + err.err.Error()
+	}
+	return "not authorised"
+}
+func (err *NotAuthorisedError) Unwrap() error {
+	return err.err
+}
+
+var ErrAnonymousNotAuthorised = &NotAuthorisedError{
+	err: errors.New("anonymous users not authorised in this group"),
+}
+var ErrDuplicateUsername = &NotAuthorisedError{
+	errors.New("this username is taken"),
+}
 
 type UserError string
 
@@ -591,6 +607,22 @@ func AddClient(group string, c Client, creds ClientCredentials) (*Group, error) 
 				}
 				return nil, UserError(m)
 			}
+			if g.description.NotBefore != nil ||
+				g.description.Expires != nil {
+				now := time.Now()
+				if g.description.NotBefore != nil &&
+					g.description.NotBefore.After(now) {
+					return nil, UserError(
+						"this group is not open yet",
+					)
+				}
+				if g.description.Expires != nil &&
+					g.description.Expires.Before(now) {
+					return nil, UserError(
+						"this group is closed",
+					)
+				}
+			}
 			if g.description.Autokick {
 				ops := false
 				for _, c := range clients {
@@ -917,7 +949,6 @@ func GetConfiguration() (*Configuration, error) {
 	return configuration.configuration, nil
 }
 
-
 // called locked
 func (g *Group) getPasswordPermission(creds ClientCredentials) ([]string, error) {
 	desc := g.description
@@ -936,7 +967,7 @@ func (g *Group) getPasswordPermission(creds ClientCredentials) ([]string, error)
 			}
 			return p, nil
 		}
-		return nil, ErrNotAuthorised
+		return nil, &NotAuthorisedError{}
 	}
 	if found, good := matchClient(creds, desc.Presenter); found {
 		if good {
@@ -946,7 +977,7 @@ func (g *Group) getPasswordPermission(creds ClientCredentials) ([]string, error)
 			}
 			return p, nil
 		}
-		return nil, ErrNotAuthorised
+		return nil, &NotAuthorisedError{}
 	}
 	if found, good := matchClient(creds, desc.Other); found {
 		if good {
@@ -956,9 +987,10 @@ func (g *Group) getPasswordPermission(creds ClientCredentials) ([]string, error)
 			}
 			return p, nil
 		}
-		return nil, ErrNotAuthorised
+		return nil, &NotAuthorisedError{}
+
 	}
-	return nil, ErrNotAuthorised
+	return nil, &NotAuthorisedError{}
 }
 
 // Return true if there is a user entry with the given username.
@@ -996,7 +1028,7 @@ func (g *Group) getPermission(creds ClientCredentials) (string, []string, error)
 	if creds.Token != "" {
 		tok, err := token.Parse(creds.Token, desc.AuthKeys)
 		if err != nil {
-			return "", nil, err
+			return "", nil, &NotAuthorisedError{err: err}
 		}
 
 		conf, err := GetConfiguration()
@@ -1007,7 +1039,7 @@ func (g *Group) getPermission(creds ClientCredentials) (string, []string, error)
 		username, perms, err =
 			tok.Check(conf.CanonicalHost, g.name, creds.Username)
 		if err != nil {
-			return "", nil, err
+			return "", nil, &NotAuthorisedError{err: err}
 		}
 		if username == "" && creds.Username != nil {
 			if g.userExists(*creds.Username) {
@@ -1051,7 +1083,7 @@ type Status struct {
 // Status returns a group's status.
 // Base is the base URL for groups; if omitted, then both the Location and
 // Endpoint members are omitted from the result.
-func (g *Group) Status(authentified bool, base string) Status {
+func (g *Group) Status(authentified bool, base *url.URL) Status {
 	desc := g.Description()
 
 	if desc.Redirect != "" {
@@ -1064,28 +1096,25 @@ func (g *Group) Status(authentified bool, base string) Status {
 	}
 
 	var location, endpoint string
-	if base != "" {
-		burl, err := url.Parse(base)
-		if err == nil {
-			wss := "wss"
-			if burl.Scheme == "http" {
-				wss = "ws"
-			}
-			l := url.URL{
-				Scheme: burl.Scheme,
-				Host:   burl.Host,
-				Path:   path.Join(burl.Path, g.name) + "/",
-			}
-			location = l.String()
-			e := url.URL{
-				Scheme: wss,
-				Host:   burl.Host,
-				Path:   "/ws",
-			}
-			endpoint = e.String()
-		} else {
-			log.Printf("Couldn't parse base URL %v", base)
+	if base != nil {
+		wss := "wss"
+		if base.Scheme == "http" {
+			wss = "ws"
 		}
+		l := url.URL{
+			Scheme: base.Scheme,
+			Host:   base.Host,
+			Path: path.Join(
+				path.Join(base.Path, "/group/"),
+				g.Name()) + "/",
+		}
+		location = l.String()
+		e := url.URL{
+			Scheme: wss,
+			Host:   base.Host,
+			Path:   path.Join(base.Path, "/ws"),
+		}
+		endpoint = e.String()
 	}
 
 	d := Status{
@@ -1108,7 +1137,7 @@ func (g *Group) Status(authentified bool, base string) Status {
 	return d
 }
 
-func GetPublic(base string) []Status {
+func GetPublic(base *url.URL) []Status {
 	gs := make([]Status, 0)
 	Range(func(g *Group) bool {
 		if g.Description().Public {

@@ -78,7 +78,7 @@ The fields are as follows:
   allowed.  This is safe if the server is on the public Internet, but not
   necessarily so if it is on a private network.
 - `proxyURL`: if running behind a reverse proxy, this specifies the
-  address of the proxy.
+  root URL that will be visible outside the proxy.
 - `canonicalHost`: the canonical name of the host running the server; this
   will cause clients to be redirected if they use a different hostname to
   access the server.
@@ -157,6 +157,8 @@ nobody will be able to join the group.  The following fields are allowed:
    a time;
  - `max-history-age`: the time, in seconds, during which chat history is
    kept (default 14400, i.e. 4 hours);
+ - `not-before` and `expires`: the times (in ISO 8601 or RFC 3339 format)
+   between which joining the group is allowed;
  - `allow-recording`: if true, then recording is allowed in this group;
  - `unrestricted-tokens`: if true, then ordinary users (without the "op"
    privilege) are allowed to create tokens;
