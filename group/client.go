@@ -15,11 +15,11 @@ import (
 )
 
 type RawPassword struct {
-	Type       string `json:"type,omitempty"`
-	Hash       string `json:"hash,omitempty"`
-	Key        string `json:"key"`
-	Salt       string `json:"salt,omitempty"`
-	Iterations int    `json:"iterations,omitempty"`
+	Type       string  `json:"type,omitempty"`
+	Hash       string  `json:"hash,omitempty"`
+	Key        *string `json:"key,omitempty"`
+	Salt       string  `json:"salt,omitempty"`
+	Iterations int     `json:"iterations,omitempty"`
 }
 
 type Password RawPassword
@@ -27,9 +27,19 @@ type Password RawPassword
 func (p Password) Match(pw string) (bool, error) {
 	switch p.Type {
 	case "":
-		return p.Key == pw, nil
+		return false, errors.New("missing password")
+	case "plain":
+		if p.Key == nil {
+			return false, errors.New("missing key")
+		}
+		return *p.Key == pw, nil
+	case "wildcard":
+		return true, nil
 	case "pbkdf2":
-		key, err := hex.DecodeString(p.Key)
+		if p.Key == nil {
+			return false, errors.New("missing key")
+		}
+		key, err := hex.DecodeString(*p.Key)
 		if err != nil {
 			return false, err
 		}
@@ -49,7 +59,10 @@ func (p Password) Match(pw string) (bool, error) {
 		)
 		return bytes.Equal(key, theirKey), nil
 	case "bcrypt":
-		err := bcrypt.CompareHashAndPassword([]byte(p.Key), []byte(pw))
+		if p.Key == nil {
+			return false, errors.New("missing key")
+		}
+		err := bcrypt.CompareHashAndPassword([]byte(*p.Key), []byte(pw))
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			return false, nil
 		}
@@ -64,7 +77,8 @@ func (p *Password) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &k)
 	if err == nil {
 		*p = Password{
-			Key: k,
+			Type: "plain",
+			Key:  &k,
 		}
 		return nil
 	}
@@ -77,7 +91,7 @@ func (p *Password) UnmarshalJSON(b []byte) error {
 }
 
 func (p Password) MarshalJSON() ([]byte, error) {
-	if p.Type == "" && p.Hash == "" && p.Salt == "" && p.Iterations == 0 {
+	if p.Type == "plain" && p.Hash == "" && p.Salt == "" && p.Iterations == 0 {
 		return json.Marshal(p.Key)
 	}
 	return json.Marshal(RawPassword(p))

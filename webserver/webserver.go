@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -26,10 +25,9 @@ import (
 	"github.com/jech/galene/diskwriter"
 	"github.com/jech/galene/group"
 	"github.com/jech/galene/rtpconn"
-	"github.com/jech/galene/stats"
 )
 
-var server atomic.Value
+var server *http.Server
 
 var StaticRoot string
 
@@ -46,10 +44,7 @@ func Serve(address string, dataDir string) error {
 	http.HandleFunc("/recordings/", recordingsHandler)
 	http.HandleFunc("/ws", wsHandler)
 	http.HandleFunc("/public-groups.json", publicHandler)
-	http.HandleFunc("/stats.json",
-		func(w http.ResponseWriter, r *http.Request) {
-			statsHandler(w, r, dataDir)
-		})
+	http.HandleFunc("/galene-api/", apiHandler)
 
 	s := &http.Server{
 		Addr:              address,
@@ -71,7 +66,7 @@ func Serve(address string, dataDir string) error {
 		group.Shutdown("server is shutting down")
 	})
 
-	server.Store(s)
+	server = s
 
 	proto := "tcp"
 	if strings.HasPrefix(address, "/") {
@@ -82,18 +77,15 @@ func Serve(address string, dataDir string) error {
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
-
-	if !Insecure {
-		err = s.ServeTLS(listener, "", "")
-	} else {
-		err = s.Serve(listener)
-	}
-
-	if err == http.ErrServerClosed {
-		return nil
-	}
-	return err
+	go func() {
+		defer listener.Close()
+		if !Insecure {
+			err = s.ServeTLS(listener, "", "")
+		} else {
+			err = s.Serve(listener)
+		}
+	}()
+	return nil
 }
 
 func cspHeader(w http.ResponseWriter, connect string) {
@@ -128,7 +120,7 @@ func notFound(w http.ResponseWriter) {
 var ErrIsDirectory = errors.New("is a directory")
 
 func httpError(w http.ResponseWriter, err error) {
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		notFound(w)
 		return
 	}
@@ -147,6 +139,18 @@ func httpError(w http.ResponseWriter, err error) {
 	log.Printf("HTTP server error: %v", err)
 	http.Error(w, "Internal server error",
 		http.StatusInternalServerError)
+}
+
+func methodNotAllowed(w http.ResponseWriter, methods ...string) {
+	ms := ""
+	for _, m := range methods {
+		if ms != "" {
+			ms = ms + ", "
+		}
+		ms = ms + m
+	}
+	w.Header().Set("Allow", ms)
+	http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 }
 
 const (
@@ -231,7 +235,7 @@ func (fh *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ff, err := fh.root.Open(index)
 		if err != nil {
 			// return 403 if index.html doesn't exist
-			if os.IsNotExist(err) {
+			if errors.Is(err, os.ErrNotExist) {
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}
@@ -466,13 +470,24 @@ func adminMatch(username, password string) (bool, error) {
 		return false, err
 	}
 
-	for _, cred := range conf.Admin {
-		if cred.Username == "" || cred.Username == username {
-			if ok, _ := cred.Password.Match(password); ok {
+	u, found := conf.Users[username]
+	if found {
+		ok, err := u.Password.Match(password)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+		perms := u.Permissions.Permissions(nil)
+		for _, p := range perms {
+			if p == "admin" {
 				return true, nil
 			}
 		}
+		return false, nil
 	}
+
 	return false, nil
 }
 
@@ -480,35 +495,6 @@ func failAuthentication(w http.ResponseWriter, realm string) {
 	w.Header().Set("www-authenticate",
 		fmt.Sprintf("basic realm=\"%v\"", realm))
 	http.Error(w, "Haha!", http.StatusUnauthorized)
-}
-
-func statsHandler(w http.ResponseWriter, r *http.Request, dataDir string) {
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		failAuthentication(w, "stats")
-		return
-	}
-
-	if ok, err := adminMatch(username, password); !ok {
-		if err != nil {
-			log.Printf("Administrator password: %v", err)
-		}
-		failAuthentication(w, "stats")
-		return
-	}
-
-	w.Header().Set("content-type", "application/json")
-	w.Header().Set("cache-control", "no-cache")
-	if r.Method == "HEAD" {
-		return
-	}
-
-	ss := stats.GetGroups()
-	e := json.NewEncoder(w)
-	err := e.Encode(ss)
-	if err != nil {
-		log.Printf("stats.json: %v", err)
-	}
 }
 
 var wsUpgrader = websocket.Upgrader{
@@ -637,7 +623,7 @@ func recordingsHandler(w http.ResponseWriter, r *http.Request) {
 
 func handleGroupAction(w http.ResponseWriter, r *http.Request, group string) {
 	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		methodNotAllowed(w, "POST")
 		return
 	}
 
@@ -765,12 +751,11 @@ func serveGroupRecordings(w http.ResponseWriter, r *http.Request, f *os.File, gr
 }
 
 func Shutdown() {
-	v := server.Load()
-	if v == nil {
-		return
+	if server == nil {
+		log.Printf("Shutting down nonexistent server")
 	}
-	s := v.(*http.Server)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	s.Shutdown(ctx)
+	server.Shutdown(ctx)
+	server = nil
 }

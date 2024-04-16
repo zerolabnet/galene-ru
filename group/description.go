@@ -2,12 +2,131 @@ package group
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 )
+
+var ErrTagMismatch = errors.New("tag mismatch")
+var ErrDescriptionsNotWritable = &NotAuthorisedError{}
+
+type Permissions struct {
+	// non-empty for a named permissions set
+	name string
+	// only used when unnamed
+	permissions []string
+}
+
+var permissionsMap = map[string][]string{
+	"op":      []string{"op", "present", "token"},
+	"present": []string{"present"},
+	"observe": []string{},
+	"admin":   []string{"admin"},
+}
+
+func NewPermissions(name string) (Permissions, error) {
+	_, ok := permissionsMap[name]
+	if !ok {
+		return Permissions{}, errors.New("unknown permission")
+	}
+	return Permissions{
+		name: name,
+	}, nil
+}
+
+func (p Permissions) Permissions(desc *Description) []string {
+	if p.name == "" {
+		return p.permissions
+	}
+
+	perms := permissionsMap[p.name]
+
+	op := false
+	present := false
+	token := false
+	record := false
+	for _, p := range perms {
+		switch p {
+		case "op":
+			op = true
+		case "present":
+			present = true
+		case "token":
+			token = true
+		case "record":
+			record = true
+		}
+	}
+
+	if desc != nil && desc.AllowRecording {
+		if op && !record {
+			// copy the slice
+			perms = append([]string{"record"}, perms...)
+		}
+	}
+
+	if desc != nil && desc.UnrestrictedTokens {
+		if present && !token {
+			perms = append([]string{"token"}, perms...)
+		}
+	}
+
+	return perms
+}
+
+func (p *Permissions) UnmarshalJSON(b []byte) error {
+	var a []string
+	err := json.Unmarshal(b, &a)
+	if err == nil {
+		*p = Permissions{
+			permissions: a,
+		}
+		return nil
+	}
+	var s string
+	err = json.Unmarshal(b, &s)
+	if err == nil {
+		_, ok := permissionsMap[s]
+		if !ok {
+			return errors.New("Unknown permission " + s)
+		}
+		*p = Permissions{
+			name: s,
+		}
+		return nil
+	}
+	return err
+}
+
+func (p Permissions) MarshalJSON() ([]byte, error) {
+	if p.name != "" {
+		return json.Marshal(p.name)
+	}
+	return json.Marshal(p.permissions)
+}
+
+type UserDescription struct {
+	Password    Password    `json:"password"`
+	Permissions Permissions `json:"permissions"`
+}
+
+// Custom MarshalJSON in order to omit ompty fields
+func (u UserDescription) MarshalJSON() ([]byte, error) {
+	uu := make(map[string]any, 2)
+	if u.Password.Type != "" {
+		uu["password"] = &u.Password
+	}
+	if u.Permissions.name != "" || u.Permissions.permissions != nil {
+		uu["permissions"] = &u.Permissions
+	}
+	return json.Marshal(uu)
+}
 
 // Description represents a group description together with some metadata
 // about the JSON file it was deserialised from.
@@ -20,6 +139,9 @@ type Description struct {
 	// when a file has changed on disk.
 	modTime  time.Time `json:"-"`
 	fileSize int64     `json:"-"`
+
+	// Whether this is an automatically generated subgroup
+	isSubgroup bool `json:"-"`
 
 	// The user-friendly group name
 	DisplayName string `json:"displayName,omitempty"`
@@ -47,13 +169,10 @@ type Description struct {
 	MaxHistoryAge int `json:"max-history-age,omitempty"`
 
 	// Time after which joining is no longer allowed
-	Expires *time.Time `json:"expires"`
+	Expires *time.Time `json:"expires,omitempty"`
 
 	// Time before which joining is not allowed
 	NotBefore *time.Time `json:"not-before,omitempty"`
-
-	// Whether users are allowed to log in with an empty username.
-	AllowAnonymous bool `json:"allow-anonymous,omitempty"`
 
 	// Whether recording is allowed.
 	AllowRecording bool `json:"allow-recording,omitempty"`
@@ -62,7 +181,7 @@ type Description struct {
 	UnrestrictedTokens bool `json:"unrestricted-tokens,omitempty"`
 
 	// Whether subgroups are created on the fly.
-	AllowSubgroups bool `json:"allow-subgroups,omitempty"`
+	AutoSubgroups bool `json:"auto-subgroups,omitempty"`
 
 	// Whether to lock the group when the last op logs out.
 	Autolock bool `json:"autolock,omitempty"`
@@ -70,14 +189,11 @@ type Description struct {
 	// Whether to kick all users when the last op logs out.
 	Autokick bool `json:"autokick,omitempty"`
 
-	// A list of logins for ops.
-	Op []ClientPattern `json:"op,omitempty"`
+	// Users allowed to login
+	Users map[string]UserDescription `json:"users,omitempty"`
 
-	// A list of logins for presenters.
-	Presenter []ClientPattern `json:"presenter,omitempty"`
-
-	// A list of logins for non-presenting users.
-	Other []ClientPattern `json:"other,omitempty"`
+	// Credentials for users with arbitrary username
+	FallbackUsers []UserDescription `json:"fallback-users,omitempty"`
 
 	// The (public) keys used for token authentication.
 	AuthKeys []map[string]interface{} `json:"authKeys,omitempty"`
@@ -91,6 +207,13 @@ type Description struct {
 	// Codec preferences.  If empty, a suitable default is chosen in
 	// the APIFromNames function.
 	Codecs []string `json:"codecs,omitempty"`
+
+	// Obsolete fields
+	Op             []ClientPattern `json:"op,omitempty"`
+	Presenter      []ClientPattern `json:"presenter,omitempty"`
+	Other          []ClientPattern `json:"other,omitempty"`
+	AllowSubgroups bool            `json:"allow-subgroups,omitempty"`
+	AllowAnonymous bool            `json:"allow-anonymous,omitempty"`
 }
 
 const DefaultMaxHistoryAge = 4 * time.Hour
@@ -102,17 +225,20 @@ func maxHistoryAge(desc *Description) time.Duration {
 	return DefaultMaxHistoryAge
 }
 
-func getDescriptionFile[T any](name string, get func(string) (T, error)) (T, string, bool, error) {
-	isParent := false
+func getDescriptionFile[T any](name string, allowSubgroups bool, get func(string) (T, error)) (T, string, bool, error) {
+	isSubgroup := false
 	for name != "" {
 		fileName := filepath.Join(
 			Directory, path.Clean("/"+name)+".json",
 		)
 		r, err := get(fileName)
-		if !os.IsNotExist(err) {
-			return r, fileName, isParent, err
+		if !errors.Is(err, os.ErrNotExist) {
+			return r, fileName, isSubgroup, err
 		}
-		isParent = true
+		if !allowSubgroups {
+			break
+		}
+		isSubgroup = true
 		name, _ = path.Split(name)
 		name = strings.TrimRight(name, "/")
 	}
@@ -136,7 +262,7 @@ func descriptionMatch(d1, d2 *Description) bool {
 // descriptionUnchanged returns true if a group's description hasn't
 // changed since it was last read.
 func descriptionUnchanged(name string, desc *Description) bool {
-	fi, fileName, _, err := getDescriptionFile(name, os.Stat)
+	fi, fileName, _, err := getDescriptionFile(name, true, os.Stat)
 	if err != nil || fileName != desc.FileName {
 		return false
 	}
@@ -156,12 +282,147 @@ func GetDescription(name string) (*Description, error) {
 		}
 	}
 
-	return readDescription(name)
+	return readDescription(name, true)
+}
+
+// GetSanitisedDescription returns the subset of the description that is
+// published on the web interface together with a suitable ETag.
+func GetSanitisedDescription(name string) (*Description, string, error) {
+	d, err := GetDescription(name)
+	if err != nil {
+		return nil, "", err
+	}
+	if d.isSubgroup {
+		return nil, "", os.ErrNotExist
+	}
+
+	desc := *d
+	desc.Users = nil
+	desc.FallbackUsers = nil
+	desc.AuthKeys = nil
+	return &desc, makeETag(desc.fileSize, desc.modTime), nil
+}
+
+// GetDescriptionTag returns an ETag for a description.
+func GetDescriptionTag(name string) (string, error) {
+	fi, _, _, err := getDescriptionFile(name, false, os.Stat)
+	if err != nil {
+		return "", err
+	}
+	return makeETag(fi.Size(), fi.ModTime()), nil
+}
+
+func makeETag(fileSize int64, modTime time.Time) string {
+	return fmt.Sprintf("\"%v-%v\"", fileSize, modTime.UnixNano())
+}
+
+// DeleteDescription deletes a description (and therefore persistently
+// deletes a group) but only if it matches a given ETag.
+func DeleteDescription(name, etag string) error {
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	fi, fileName, _, err := getDescriptionFile(name, false, os.Stat)
+	if err != nil {
+		return err
+	}
+	if etag != makeETag(fi.Size(), fi.ModTime()) {
+		return ErrTagMismatch
+	}
+	return os.Remove(fileName)
+}
+
+// UpdateDescription overwrites a description if it matches a given ETag.
+// In order to create a new group, pass an empty ETag.
+func UpdateDescription(name, etag string, desc *Description) error {
+	if desc.Users != nil || desc.FallbackUsers != nil || desc.AuthKeys != nil {
+		return errors.New("description is not sanitised")
+	}
+
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	oldetag := ""
+	var filename string
+	old, err := readDescription(name, false)
+	if err == nil {
+		oldetag = makeETag(old.fileSize, old.modTime)
+		filename = old.FileName
+	} else if errors.Is(err, os.ErrNotExist) {
+		old = nil
+		filename = filepath.Join(
+			Directory, path.Clean("/"+name)+".json",
+		)
+	} else {
+		return err
+	}
+
+	if oldetag != etag {
+		return ErrTagMismatch
+	}
+
+	newdesc := *desc
+	if old != nil {
+		newdesc.Users = old.Users
+		newdesc.FallbackUsers = old.FallbackUsers
+		newdesc.AuthKeys = old.AuthKeys
+	}
+
+	return rewriteDescriptionFile(filename, &newdesc)
+}
+
+func rewriteDescriptionFile(filename string, desc *Description) error {
+	conf, err := GetConfiguration()
+	if err != nil {
+		return err
+	}
+	if !conf.WritableGroups {
+		return ErrDescriptionsNotWritable
+	}
+
+	dir := filepath.Dir(filename)
+
+	err = os.MkdirAll(dir, 0700)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.CreateTemp(dir, "*.temp")
+	if err != nil {
+		return err
+	}
+	temp := f.Name()
+
+	encoder := json.NewEncoder(f)
+	err = encoder.Encode(desc)
+	if err == nil {
+		err = f.Sync()
+	}
+	if err != nil {
+		f.Close()
+		os.Remove(temp)
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		os.Remove(temp)
+		return err
+	}
+
+	err = os.Rename(temp, filename)
+	if err != nil {
+		os.Remove(temp)
+		return err
+	}
+
+	return nil
+
 }
 
 // readDescription reads a group's description from disk
-func readDescription(name string) (*Description, error) {
-	r, fileName, isParent, err := getDescriptionFile(name, os.Open)
+func readDescription(name string, allowSubgroups bool) (*Description, error) {
+	r, fileName, isSubgroup, err :=
+		getDescriptionFile(name, allowSubgroups, os.Open)
 	if err != nil {
 		return nil, err
 	}
@@ -180,10 +441,11 @@ func readDescription(name string) (*Description, error) {
 	if err != nil {
 		return nil, err
 	}
-	if isParent {
-		if !desc.AllowSubgroups {
+	if isSubgroup {
+		if !desc.AutoSubgroups {
 			return nil, os.ErrNotExist
 		}
+		desc.isSubgroup = true
 		desc.Public = false
 		desc.Description = ""
 	}
@@ -192,5 +454,249 @@ func readDescription(name string) (*Description, error) {
 	desc.fileSize = fi.Size()
 	desc.modTime = fi.ModTime()
 
+	err = upgradeDescription(&desc)
+	if err != nil {
+		return nil, err
+	}
+
 	return &desc, nil
+}
+
+func upgradeDescription(desc *Description) error {
+	if desc.AllowAnonymous {
+		log.Printf(
+			"%v: field allow-anonymous is obsolete, ignored",
+			desc.FileName,
+		)
+		desc.AllowAnonymous = false
+	}
+
+	if desc.AllowSubgroups {
+		desc.AutoSubgroups = true
+		desc.AllowSubgroups = false
+	}
+
+	upgradePassword := func(pw *Password) Password {
+		if pw == nil {
+			return Password{
+				Type: "wildcard",
+			}
+		}
+		return *pw
+	}
+
+	upgradeUser := func(u ClientPattern, p string) UserDescription {
+		return UserDescription{
+			Password: upgradePassword(u.Password),
+			Permissions: Permissions{
+				name: p,
+			},
+		}
+	}
+
+	upgradeUsers := func(ps []ClientPattern, p string) {
+		if desc.Users == nil {
+			desc.Users = make(map[string]UserDescription)
+		}
+		for _, u := range ps {
+			if u.Username == "" {
+				desc.FallbackUsers = append(desc.FallbackUsers,
+					upgradeUser(u, p))
+				continue
+			}
+			_, found := desc.Users[u.Username]
+			if found {
+				log.Printf("%v: duplicate user %v, ignored",
+					desc.FileName, u.Username)
+				continue
+			}
+			desc.Users[u.Username] = upgradeUser(u, p)
+		}
+	}
+
+	if desc.Op != nil {
+		upgradeUsers(desc.Op, "op")
+		desc.Op = nil
+	}
+	if desc.Presenter != nil {
+		upgradeUsers(desc.Presenter, "present")
+		desc.Presenter = nil
+	}
+	if desc.Other != nil {
+		upgradeUsers(desc.Other, "observe")
+		desc.Other = nil
+	}
+
+	return nil
+}
+
+func GetDescriptionNames() ([]string, error) {
+	var names []string
+	err := filepath.WalkDir(
+		Directory,
+		func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			base := filepath.Base(path)
+			if d.IsDir() {
+				if base[0] == '.' {
+					return fs.SkipDir
+				}
+				return nil
+			}
+			if base[0] == '.' {
+				return nil
+			}
+			if strings.HasSuffix(base, ".json") {
+				names = append(names, strings.TrimSuffix(
+					base, ".json",
+				))
+			}
+			return nil
+		},
+	)
+	return names, err
+}
+
+func SetFallbackUsers(group string, users []UserDescription) error {
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	desc, err := readDescription(group, false)
+	if err != nil {
+		return err
+	}
+	desc.FallbackUsers = users
+	return rewriteDescriptionFile(desc.FileName, desc)
+}
+
+func SetKeys(group string, keys []map[string]any) error {
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	desc, err := readDescription(group, false)
+	if err != nil {
+		return err
+	}
+	desc.AuthKeys = keys
+	return rewriteDescriptionFile(desc.FileName, desc)
+}
+
+func GetUsers(group string) ([]string, string, error) {
+	desc, err := GetDescription(group)
+	if err != nil {
+		return nil, "", err
+	}
+
+	users := make([]string, 0, len(desc.Users))
+	for u := range desc.Users {
+		users = append(users, u)
+	}
+
+	return users, makeETag(desc.fileSize, desc.modTime), nil
+}
+
+func GetSanitisedUser(group, username string) (UserDescription, string, error) {
+	desc, err := GetDescription(group)
+	if err != nil {
+		return UserDescription{}, "", err
+	}
+
+	if desc.Users == nil {
+		return UserDescription{}, "", os.ErrNotExist
+	}
+
+	u, ok := desc.Users[username]
+	if !ok {
+		return UserDescription{}, "", os.ErrNotExist
+	}
+
+	u.Password = Password{}
+	return u, makeETag(desc.fileSize, desc.modTime), nil
+}
+
+func GetUserTag(group, username string) (string, error) {
+	_, etag, err := GetSanitisedUser(group, username)
+	return etag, err
+}
+
+func DeleteUser(group, username, etag string) error {
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	desc, err := readDescription(group, false)
+	if err != nil {
+		return err
+	}
+	if desc.Users == nil {
+		return os.ErrNotExist
+	}
+
+	_, ok := desc.Users[username]
+	if !ok {
+		return os.ErrNotExist
+	}
+
+	oldetag := makeETag(desc.fileSize, desc.modTime)
+	if oldetag != etag {
+		return ErrTagMismatch
+	}
+
+	delete(desc.Users, username)
+	return rewriteDescriptionFile(desc.FileName, desc)
+}
+
+func UpdateUser(group, username, etag string, user *UserDescription) error {
+	if user.Password.Type != "" || user.Password.Key != nil {
+		return errors.New("user description is not sanitised")
+	}
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	desc, err := readDescription(group, false)
+	if err != nil {
+		return err
+	}
+	if desc.Users == nil {
+		desc.Users = make(map[string]UserDescription)
+	}
+
+	old, ok := desc.Users[username]
+	var oldetag string
+	if ok {
+		oldetag = makeETag(desc.fileSize, desc.modTime)
+	} else {
+		oldetag = ""
+	}
+
+	if oldetag != etag {
+		return ErrTagMismatch
+	}
+
+	user.Password = old.Password
+	desc.Users[username] = *user
+	return rewriteDescriptionFile(desc.FileName, desc)
+}
+
+func SetUserPassword(group, username string, pw Password) error {
+	groups.mu.Lock()
+	defer groups.mu.Unlock()
+
+	desc, err := readDescription(group, false)
+	if err != nil {
+		return err
+	}
+	if desc.Users == nil {
+		return os.ErrNotExist
+	}
+
+	user, ok := desc.Users[username]
+	if !ok {
+		return os.ErrNotExist
+	}
+
+	user.Password = pw
+	desc.Users[username] = user
+	return rewriteDescriptionFile(desc.FileName, desc)
 }

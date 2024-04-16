@@ -1299,7 +1299,7 @@ func leaveGroup(c *webClient) {
 
 func closeDownConn(c *webClient, id string, message string) error {
 	err := delDownConn(c, id)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		log.Printf("Close down connection: %v", err)
 	}
 	err = c.write(clientMessage{
@@ -1413,7 +1413,7 @@ func handleClientMessage(c *webClient, m clientMessage) error {
 		if err != nil {
 			var e, s string
 			var autherr *group.NotAuthorisedError
-			if os.IsNotExist(err) {
+			if errors.Is(err, os.ErrNotExist) {
 				s = "group does not exist"
 			} else if errors.Is(err, group.ErrAnonymousNotAuthorised) {
 				s = "please choose a username"
@@ -1793,7 +1793,7 @@ func handleClientMessage(c *webClient, m clientMessage) error {
 			if tok.Expires == nil {
 				return terror("error", "trying to edit nothing")
 			}
-			new, err := token.Edit(
+			new, err := token.Extend(
 				c.group.Name(), tok.Token, *tok.Expires,
 			)
 			if err != nil {

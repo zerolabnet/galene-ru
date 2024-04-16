@@ -24,8 +24,11 @@ func main() {
 	var length int
 	var saltLen int
 	var username string
+	var permissions string
 	flag.StringVar(&username, "user", "",
 		"generate entry for given `username`")
+	flag.StringVar(&permissions, "permissions", "present",
+		"`permissions` for user entry")
 	flag.StringVar(&algorithm, "hash", "pbkdf2",
 		"hashing `algorithm`")
 	flag.IntVar(&iterations, "iterations", 4096,
@@ -57,10 +60,11 @@ func main() {
 			key := pbkdf2.Key(
 				[]byte(pw), salt, iterations, length, sha256.New,
 			)
+			encoded := hex.EncodeToString(key)
 			p = group.Password{
 				Type:       "pbkdf2",
 				Hash:       "sha-256",
-				Key:        hex.EncodeToString(key),
+				Key:        &encoded,
 				Salt:       hex.EncodeToString(salt),
 				Iterations: iterations,
 			}
@@ -72,9 +76,10 @@ func main() {
 				log.Fatalf("Couldn't hash password: %v", err)
 			}
 
+			k := string(key)
 			p = group.Password{
 				Type: "bcrypt",
-				Key:  string(key),
+				Key:  &k,
 			}
 		} else {
 			log.Fatalf("Unknown hash type %v", algorithm)
@@ -82,9 +87,14 @@ func main() {
 
 		e := json.NewEncoder(os.Stdout)
 		if username != "" {
-			creds := group.ClientPattern{
-				Username: username,
-				Password: &p,
+			perms, err := group.NewPermissions(permissions)
+			if err != nil {
+				log.Fatalf("NewPermissions: %v", err)
+			}
+			creds := make(map[string]group.UserDescription)
+			creds[username] = group.UserDescription{
+				Password:    p,
+				Permissions: perms,
 			}
 			err = e.Encode(creds)
 		} else {

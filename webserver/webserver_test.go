@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jech/galene/group"
 	"github.com/pion/webrtc/v3"
+
+	"github.com/jech/galene/group"
 )
 
 func TestParseGroupName(t *testing.T) {
@@ -97,13 +98,20 @@ func TestParseSplit(t *testing.T) {
 	a := []struct{ p, a, b, c string }{
 		{"", "", "", ""},
 		{"/a", "/a", "", ""},
+		{"/.a", "", ".a", ""},
+		{"/.a/", "", ".a", "/"},
+		{"/.a/b", "", ".a", "/b"},
+		{"/.a/b/", "", ".a", "/b/"},
+		{"/.a/b/c", "", ".a", "/b/c"},
+		{"/.a/b/c", "", ".a", "/b/c"},
+		{"/.a/b/.c/", "", ".a", "/b/.c/"},
 		{"/a/.b", "/a", ".b", ""},
 		{"/a/.b/", "/a", ".b", "/"},
 		{"/a/.b/c", "/a", ".b", "/c"},
 		{"/a/.b/c/", "/a", ".b", "/c/"},
 		{"/a/.b/c/d", "/a", ".b", "/c/d"},
 		{"/a/.b/c/d/", "/a", ".b", "/c/d/"},
-		{"/a/.b/c/d./", "/a", ".b", "/c/d./"},
+		{"/a/.b/c/.d/", "/a", ".b", "/c/.d/"},
 	}
 
 	for _, pabc := range a {
@@ -111,6 +119,25 @@ func TestParseSplit(t *testing.T) {
 		if pabc.a != a || pabc.b != b || pabc.c != c {
 			t.Errorf("Path %v, got %v, %v, %v, expected %v, %v, %v",
 				pabc.p, a, b, c, pabc.a, pabc.b, pabc.c,
+			)
+		}
+	}
+}
+
+func TestParseContentType(t *testing.T) {
+	a := []struct{ a, b string }{
+		{"", ""},
+		{"text/plain", "text/plain"},
+		{"text/plain;charset=utf-8", "text/plain"},
+		{"text/plain; charset=utf-8", "text/plain"},
+		{"text/plain ; charset=utf-8", "text/plain"},
+	}
+
+	for _, ab := range a {
+		b := parseContentType(ab.a)
+		if b != ab.b {
+			t.Errorf("Content type %v, got %v, expected %v",
+				ab.a, b, ab.b,
 			)
 		}
 	}
@@ -187,6 +214,54 @@ func TestFormatICEServer(t *testing.T) {
 				t.Errorf("Got %v, expected %v", v, sv.v)
 			}
 		})
+	}
+}
+
+func TestMatchAdmin(t *testing.T) {
+	d := t.TempDir()
+	group.DataDirectory = d
+
+	filename := filepath.Join(d, "config.json")
+	f, err := os.Create(filename)
+	if err != nil {
+		t.Fatalf("Create %v: %v", filename, err)
+	}
+	f.Write([]byte(`{
+	    "users": {
+		"root": {"password": "pwd", "permissions": "admin"},
+		"notroot": {"password": "pwd"}
+	    }
+	}`))
+	f.Close()
+
+	ok, err := adminMatch("jch", "pwd")
+	if ok || err != nil {
+		t.Errorf("jch: %v %v", ok, err)
+	}
+
+	ok, err = adminMatch("root", "pwd")
+	if !ok || err != nil {
+		t.Errorf("root: %v %v", ok, err)
+	}
+
+	ok, err = adminMatch("root", "notpwd")
+	if ok || err != nil {
+		t.Errorf("root: %v %v", ok, err)
+	}
+
+	ok, err = adminMatch("root", "")
+	if ok || err != nil {
+		t.Errorf("root: %v %v", ok, err)
+	}
+
+	ok, err = adminMatch("notroot", "pwd")
+	if ok || err != nil {
+		t.Errorf("notroot: %v %v", ok, err)
+	}
+
+	ok, err = adminMatch("notroot", "notpwd")
+	if ok || err != nil {
+		t.Errorf("notroot: %v %v", ok, err)
 	}
 }
 

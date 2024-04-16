@@ -62,7 +62,7 @@ func getStateful(token string) (*Stateful, error) {
 	defer tokens.mu.Unlock()
 	err := tokens.load()
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, err
@@ -109,7 +109,7 @@ func (state *state) load() error {
 		state.modTime = time.Time{}
 		state.fileSize = 0
 		state.tokens = nil
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
 		return err
@@ -125,7 +125,7 @@ func (state *state) load() error {
 		state.modTime = time.Time{}
 		state.fileSize = 0
 		state.tokens = nil
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
 		return err
@@ -153,7 +153,7 @@ func (state *state) load() error {
 		state.modTime = time.Time{}
 		state.fileSize = 0
 		state.tokens = nil
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
 		return err
@@ -217,18 +217,18 @@ func Add(token *Stateful) (*Stateful, error) {
 	return tokens.Add(token)
 }
 
-func Edit(group, token string, expires time.Time) (*Stateful, error) {
-	return tokens.Edit(group, token, expires)
+func Extend(group, token string, expires time.Time) (*Stateful, error) {
+	return tokens.Extend(group, token, expires)
 }
 
-func (state *state) Edit(group, token string, expires time.Time) (*Stateful, error) {
+func (state *state) Extend(group, token string, expires time.Time) (*Stateful, error) {
 	tokens.mu.Lock()
 	defer tokens.mu.Unlock()
-	return state.edit(group, token, expires)
+	return state.extend(group, token, expires)
 }
 
 // called locked
-func (state *state) edit(group, token string, expires time.Time) (*Stateful, error) {
+func (state *state) extend(group, token string, expires time.Time) (*Stateful, error) {
 	err := state.load()
 	if err != nil {
 		return nil, err
@@ -262,7 +262,7 @@ func (state *state) edit(group, token string, expires time.Time) (*Stateful, err
 func (state *state) rewrite() error {
 	if state.tokens == nil || len(state.tokens) == 0 {
 		err := os.Remove(state.filename)
-		if err == nil || os.IsNotExist(err) {
+		if err == nil || errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
 		return err
