@@ -26,19 +26,19 @@ document.getElementById('passwordform').onsubmit = async function(e) {
     let parms = new URLSearchParams(window.location.search);
     let group = parms.get('group');
     if(!group) {
-        displayError("Couldn't determine group");
+        displayError("Не удалось определить группу");
         return;
     }
     let user = parms.get('username');
     if(!user) {
-        displayError("Couldn't determine username");
+        displayError("Не удалось определить имя пользователя");
         return;
     }
 
     let old1 = document.getElementById('old1').value;
     let old2 = document.getElementById('old2').value;
     if(old1 !== old2) {
-        displayError("Passwords don't match.");
+        displayError("Пароли не совпадают.");
         return;
     }
 
@@ -49,7 +49,7 @@ document.getElementById('passwordform').onsubmit = async function(e) {
         document.getElementById('new').value = '';
         displayError(null);
         document.getElementById('message').textContent =
-            'Password successfully changed.';
+            'Пароль успешно изменен.';
     } catch(e) {
         displayError(e.toString());
     }
@@ -68,9 +68,9 @@ async function doit(group, user, old, pw) {
                         });
     if(!r.ok) {
         if(r.status === 401)
-            throw new Error('Permission denied');
+            throw new Error('Разрешение отклонено');
         else
-            throw new Error(`The server said: ${r.status} ${r.statusText}`);
+            throw new Error(`Сервер ответил: ${r.status} ${r.statusText}`);
         return;
     }
 }
