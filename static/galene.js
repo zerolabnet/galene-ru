@@ -688,12 +688,8 @@ getInputElement('hqaudiobox').onchange = function(e) {
 document.getElementById('mutebutton').onclick = function(e) {
     e.preventDefault();
     let localMute = getSettings().localMute;
-    if (localMute && !findUpMedia('camera')) {
-        displayMessage('Нажмите кнопку Включить, чтобы включить камеру или микрофон');
-    } else {
-        localMute = !localMute;
-        setLocalMute(localMute, true);
-    }
+    localMute = !localMute;
+    setLocalMute(localMute, true);
 };
 
 document.getElementById('sharebutton').onclick = function(e) {
@@ -1307,7 +1303,7 @@ async function workerSendReceive(worker, message, transfer) {
  */
 let filters = {
     'mirror-h': {
-        description: "Отразить горизонтально",
+        description: "отразить горизонтально",
         draw: async function(src, ctx) {
             if(!(ctx instanceof CanvasRenderingContext2D))
                 throw new Error('неправильный тип контекста');
@@ -1323,7 +1319,7 @@ let filters = {
         },
     },
     'mirror-v': {
-        description: "Отразить вертикально",
+        description: "отразить вертикально",
         draw: async function(src, ctx) {
             if(!(ctx instanceof CanvasRenderingContext2D))
                 throw new Error('неправильный тип контекста');
@@ -1339,7 +1335,7 @@ let filters = {
         },
     },
     'background-blur': {
-        description: 'Размытие фона',
+        description: 'размытие фона',
         predicate: async function() {
             let r = await fetch('/third-party/tasks-vision/vision_bundle.mjs', {
                 method: 'HEAD',
@@ -1399,41 +1395,41 @@ let filters = {
                 // the background then blur, this avoids a halo effect
                 ctx.globalCompositeOperation = 'source-in';
                 ctx.drawImage(result.bitmap, 0, 0);
-		if('filter' in ctx) {
+        if('filter' in ctx) {
                     ctx.globalCompositeOperation = 'copy';
                     ctx.filter = `blur(${src.videoWidth / 48}px)`;
                     ctx.drawImage(ctx.canvas, 0, 0);
                     ctx.filter = 'none';
-		} else {
-		    // Safari bug 198416, context.filter is not supported.
-		    let scale = 24;
-		    let swidth = src.videoWidth / scale;
-		    let sheight = src.videoHeight / scale;
-		    if(!('canvas' in this.userdata))
-			this.userdata.canvas = document.createElement('canvas');
-		    let c2 = this.userdata.canvas;
-		    if(c2.width != swidth)
-			c2.width = swidth;
-		    if(c2.height != sheight)
-			c2.height = sheight;
-		    let ctx2 = c2.getContext('2d');
-		    // scale down the background
-		    ctx2.globalCompositeOperation = 'copy';
-		    ctx2.drawImage(ctx.canvas,
-				   0, 0, src.videoWidth, src.videoHeight,
-				   0, 0, swidth, sheight,
-				  );
-		    // scale back up, composite atop the original background
-		    ctx.globalCompositeOperation = 'source-atop';
-		    ctx.drawImage(ctx2.canvas,
-				  0, 0,
-				  src.videoWidth / scale,
-				  src.videoHeight / scale,
-				  0, 0, src.videoWidth, src.videoHeight,
-				 );
-		}
+        } else {
+            // Safari bug 198416, context.filter is not supported.
+            let scale = 24;
+            let swidth = src.videoWidth / scale;
+            let sheight = src.videoHeight / scale;
+            if(!('canvas' in this.userdata))
+            this.userdata.canvas = document.createElement('canvas');
+            let c2 = this.userdata.canvas;
+            if(c2.width != swidth)
+            c2.width = swidth;
+            if(c2.height != sheight)
+            c2.height = sheight;
+            let ctx2 = c2.getContext('2d');
+            // scale down the background
+            ctx2.globalCompositeOperation = 'copy';
+            ctx2.drawImage(ctx.canvas,
+                   0, 0, src.videoWidth, src.videoHeight,
+                   0, 0, swidth, sheight,
+                  );
+            // scale back up, composite atop the original background
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.drawImage(ctx2.canvas,
+                  0, 0,
+                  src.videoWidth / scale,
+                  src.videoHeight / scale,
+                  0, 0, src.videoWidth, src.videoHeight,
+                 );
+        }
 
-		// now draw the foreground
+        // now draw the foreground
                 ctx.globalCompositeOperation = 'destination-atop';
                 ctx.drawImage(result.bitmap, 0, 0);
                 ctx.globalCompositeOperation = 'source-over';
@@ -2846,13 +2842,11 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
         if(present) {
             if(present === 'both') {
                 delSetting('video');
-                setLocalMute(false, true);
             }
             else if(present === 'cam')
                 setLocalMute(true, true);
             else if(present === 'mike') {
                 updateSettings({video: ''});
-                setLocalMute(false, true);
             }
 
             reflectSettings();
@@ -4309,11 +4303,13 @@ document.getElementById('loginform').onsubmit = async function(e) {
 
     if(getInputElement('presentboth').checked)
         presentRequested = 'both';
+    else if(getInputElement('presentcam').checked)
+        presentRequested = 'cam';
     else if(getInputElement('presentmike').checked)
         presentRequested = 'mike';
     else
         presentRequested = null;
-    getInputElement('presentoff').checked = true;
+    getInputElement('presentboth').checked = true;
 
     // Connect to the server, gotConnected will join.
     form.active = false;
