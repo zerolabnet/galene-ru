@@ -1,0 +1,16 @@
+{
+    "displayName": "zerolab",
+    "description": "Свободная для собраний группа",
+    "users":{
+        "admin": {"password":"secret_adm_pwd", "permissions": "op"},
+        "user1": {"password":"secret_pwd1", "permissions": "present"},
+        "user2": {"password":"secret_pwd2", "permissions": "message"},
+        "user3": {"password":"secret_pwd3", "permissions": "observe"}
+    },
+    "codecs": ["vp8", "vp9", "opus"],
+    "allow-recording": false,
+    "auto-subgroups": true,
+    "unrestricted-tokens": true,
+    "autolock": false,
+    "public": true
+}

@@ -5,3 +5,4 @@
 /groups/**/*.json
 /static/**/*.d.ts
 /static/third-party/tasks-vision
+.DS_Store

@@ -171,7 +171,7 @@ function delSetting(key) {
 function getSelectElement(id) {
     let elt = document.getElementById(id);
     if(!elt || !(elt instanceof HTMLSelectElement))
-        throw new Error(`Couldn't find ${id}`);
+        throw new Error(`Не удалось найти ${id}`);
     return elt;
 }
 
@@ -183,7 +183,7 @@ function getSelectElement(id) {
 function getInputElement(id) {
     let elt = document.getElementById(id);
     if(!elt || !(elt instanceof HTMLInputElement))
-        throw new Error(`Couldn't find ${id}`);
+        throw new Error(`Не удалось найти ${id}`);
     return elt;
 }
 
@@ -195,7 +195,7 @@ function getInputElement(id) {
 function getButtonElement(id) {
     let elt = document.getElementById(id);
     if(!elt || !(elt instanceof HTMLButtonElement))
-        throw new Error(`Couldn't find ${id}`);
+        throw new Error(`Не удалось найти ${id}`);
     return elt;
 }
 
@@ -639,7 +639,7 @@ function setLocalMute(mute, reflect) {
 getSelectElement('videoselect').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLSelectElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({video: this.value});
     replaceCameraStream();
 };
@@ -647,7 +647,7 @@ getSelectElement('videoselect').onchange = function(e) {
 getSelectElement('audioselect').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLSelectElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({audio: this.value});
     replaceCameraStream();
 };
@@ -655,7 +655,7 @@ getSelectElement('audioselect').onchange = function(e) {
 getInputElement('mirrorbox').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLInputElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({mirrorView: this.checked});
     // no need to reopen the camera
     replaceUpStreams('camera');
@@ -664,7 +664,7 @@ getInputElement('mirrorbox').onchange = function(e) {
 getInputElement('blackboardbox').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLInputElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({blackboardMode: this.checked});
     replaceCameraStream();
 };
@@ -672,7 +672,7 @@ getInputElement('blackboardbox').onchange = function(e) {
 getInputElement('preprocessingbox').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLInputElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({preprocessing: this.checked});
     replaceCameraStream();
 };
@@ -680,7 +680,7 @@ getInputElement('preprocessingbox').onchange = function(e) {
 getInputElement('hqaudiobox').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLInputElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({hqaudio: this.checked});
     replaceCameraStream();
 };
@@ -689,7 +689,7 @@ document.getElementById('mutebutton').onclick = function(e) {
     e.preventDefault();
     let localMute = getSettings().localMute;
     if (localMute && !findUpMedia('camera')) {
-        displayMessage('Please use Enable to enable your camera or microphone.');
+        displayMessage('Нажмите кнопку Включить, чтобы включить камеру или микрофон');
     } else {
         localMute = !localMute;
         setLocalMute(localMute, true);
@@ -703,7 +703,7 @@ document.getElementById('sharebutton').onclick = function(e) {
 
 getSelectElement('filterselect').onchange = async function(e) {
     if(!(this instanceof HTMLSelectElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({filter: this.value});
     let c = findUpMedia('camera');
     if(c) {
@@ -733,21 +733,21 @@ function getMaxVideoThroughput() {
     case 'unlimited':
         return null;
     default:
-        console.error('Unknown video quality', v);
+        console.error('Неизвестное качество видео', v);
         return 700000;
     }
 }
 
 getSelectElement('sendselect').onchange = async function(e) {
     if(!(this instanceof HTMLSelectElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({send: this.value});
     await reconsiderSendParameters();
 };
 
 getSelectElement('simulcastselect').onchange = async function(e) {
     if(!(this instanceof HTMLSelectElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({simulcast: this.value});
     await reconsiderSendParameters();
 };
@@ -777,7 +777,7 @@ function mapRequest(what) {
         return {'': ['audio','video']}
         break;
     default:
-        throw new Error(`Unknown value ${what} in request`);
+        throw new Error(`Неизвестное значение ${what} в запросе`);
     }
 }
 
@@ -801,7 +801,7 @@ function mapRequestLabel(what, label) {
 getSelectElement('requestselect').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLSelectElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({request: this.value});
     serverConnection.request(mapRequest(this.value));
     reconsiderDownRate();
@@ -813,7 +813,7 @@ const activityDetectionThreshold = 0.2;
 
 getInputElement('activitybox').onchange = function(e) {
     if(!(this instanceof HTMLInputElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({activityDetection: this.checked});
     for(let id in serverConnection.down) {
         let c = serverConnection.down[id];
@@ -828,7 +828,7 @@ getInputElement('activitybox').onchange = function(e) {
 
 getInputElement('displayallbox').onchange = function(e) {
     if(!(this instanceof HTMLInputElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     updateSettings({displayAll: this.checked});
     for(let id in serverConnection.down) {
         let c = serverConnection.down[id];
@@ -1055,7 +1055,7 @@ function newUpStream(localId) {
  */
 async function setSendParameters(c, bps, simulcast) {
     if(!c.up)
-        throw new Error('Setting throughput of down stream');
+        throw new Error('Установка пропускной способности входящего потока данных');
     if(c.label === 'screenshare')
         simulcast = false;
     let senders = c.pc.getSenders();
@@ -1129,7 +1129,7 @@ function cancelReconsiderParameters() {
 function Filter(stream, definition) {
     /** @ts-ignore */
     if(!HTMLCanvasElement.prototype.captureStream) {
-        throw new Error('Filters are not supported on this platform');
+        throw new Error('Фильтры не поддерживаются на данной платформе');
     }
 
     /** @type {MediaStream} */
@@ -1254,7 +1254,7 @@ async function removeFilter(c) {
         return;
 
     if(!(old instanceof Filter))
-        throw new Error('userdata.filter is not a filter');
+        throw new Error('userdata.filter не является фильтром');
 
     c.setStream(old.inputStream);
     await old.stop();
@@ -1307,10 +1307,10 @@ async function workerSendReceive(worker, message, transfer) {
  */
 let filters = {
     'mirror-h': {
-        description: "Horizontal mirror",
+        description: "Отразить горизонтально",
         draw: async function(src, ctx) {
             if(!(ctx instanceof CanvasRenderingContext2D))
-                throw new Error('bad context type');
+                throw new Error('неправильный тип контекста');
             if(ctx.canvas.width !== src.videoWidth ||
                ctx.canvas.height !== src.videoHeight) {
                 ctx.canvas.width = src.videoWidth;
@@ -1323,10 +1323,10 @@ let filters = {
         },
     },
     'mirror-v': {
-        description: "Vertical mirror",
+        description: "Отразить вертикально",
         draw: async function(src, ctx) {
             if(!(ctx instanceof CanvasRenderingContext2D))
-                throw new Error('bad context type');
+                throw new Error('неправильный тип контекста');
             if(ctx.canvas.width !== src.videoWidth ||
                ctx.canvas.height !== src.videoHeight) {
                 ctx.canvas.width = src.videoWidth;
@@ -1339,7 +1339,7 @@ let filters = {
         },
     },
     'background-blur': {
-        description: 'Background blur',
+        description: 'Размытие фона',
         predicate: async function() {
             let r = await fetch('/third-party/tasks-vision/vision_bundle.mjs', {
                 method: 'HEAD',
@@ -1355,9 +1355,9 @@ let filters = {
         },
         init: async function(ctx) {
             if(!(this instanceof Filter))
-                throw new Error('Bad type for this');
+                throw new Error('Плохой тип данных');
             if(this.userdata.worker)
-                throw new Error("Worker already running (this shouldn't happen)")
+                throw new Error("Worker уже запущен (этого не должно происходить)")
             this.userdata.worker = new Worker('/background-blur-worker.js');
             await workerSendReceive(this.userdata.worker, {
                 model: '/third-party/tasks-vision/models/selfie_segmenter.tflite',
@@ -1392,6 +1392,7 @@ let filters = {
 
                 // set the alpha mask, background is opaque
                 ctx.globalCompositeOperation = 'copy';
+                ctx.filter = 'none';
                 ctx.drawImage(mask, 0, 0);
 
                 // rather than blurring the original image, we first mask
@@ -1499,7 +1500,7 @@ function doSimulcast() {
 
 async function setUpStream(c, stream) {
     if(c.stream != null)
-        throw new Error("Setting nonempty stream");
+        throw new Error("Установка непустого потока");
 
     c.setStream(stream);
 
@@ -1602,7 +1603,7 @@ async function setUpStream(c, stream) {
         if(sender) {
             c.pc.removeTrack(sender);
         } else {
-            console.warn('Removing unknown track');
+            console.warn('Удаление неизвестной дорожки');
         }
 
         let found = false;
@@ -1769,10 +1770,10 @@ async function addShareMedia() {
     if(!safariScreenshareDone) {
         if(isSafari()) {
             let ok = confirm(
-                'Screen sharing in Safari is broken.  ' +
-                    'It will work at first, ' +
-                    'but then your video will randomly freeze.  ' +
-                    'Are you sure that you wish to enable screensharing?'
+                'Демонстрация экрана в Safari не работает.  ' +
+                    'Поначалу это будет работать, ' +
+                    'но при этом видео будет случайно замирать.  ' +
+                    'Вы уверены, что хотите включить демонстрацию экрана?'
             );
             if(!ok)
                 return
@@ -1784,7 +1785,7 @@ async function addShareMedia() {
     let stream = null;
     try {
         if(!('getDisplayMedia' in navigator.mediaDevices))
-            throw new Error('Your browser does not support screen sharing');
+            throw new Error('Ваш браузер не поддерживает демонстрацию экрана');
         stream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: true,
@@ -1820,7 +1821,7 @@ async function addFileMedia(file) {
         /** @ts-ignore */
         stream = video.mozCaptureStream();
     else {
-        displayError("This browser doesn't support file playback");
+        displayError("Этот браузер не поддерживает воспроизведение файлов");
         return;
     }
 
@@ -1840,7 +1841,7 @@ async function addFileMedia(file) {
     let muted = getSettings().localMute;
     if(presenting && !muted) {
         setLocalMute(true, true);
-        displayWarning('You have been muted');
+        displayWarning('Вам был отключен микрофон');
     }
 
     await setMedia(c, false, video);
@@ -1918,7 +1919,7 @@ function muteLocalTracks(mute) {
 function forceDownRate(id, force, value) {
     let c = serverConnection.down[id];
     if(!c)
-        throw new Error("Unknown down stream");
+        throw new Error("Неизвестный исходящий поток данных");
     if('requested' in c.userdata) {
         if(force)
             c.userdata.requested.force = !!value;
@@ -1969,7 +1970,7 @@ function reconsiderDownRate(id) {
     }
     let c = serverConnection.down[id];
     if(!c)
-        throw new Error("Unknown down stream");
+        throw new Error("Неизвестный исходящий поток данных");
     let normalrequest = mapRequestLabel(getSettings().request, c.label);
 
     let requestlow = mapVideoToLow(normalrequest);
@@ -1984,7 +1985,7 @@ function reconsiderDownRate(id) {
         let media = /** @type {HTMLVideoElement} */
             (document.getElementById('media-' + c.localId));
         if(!media)
-            throw new Error("No media for stream");
+            throw new Error("Нет медиа для трансляции");
         let w = media.scrollWidth;
         let h = media.scrollHeight;
         if(w && h && w * h <= 320 * 240) {
@@ -2131,7 +2132,7 @@ function resetMedia(c) {
  */
 function cloneHTMLElement(elt) {
     if(!(elt instanceof HTMLElement))
-        throw new Error('Unexpected element type');
+        throw new Error('Недопустимый тип элемента');
     return /** @type{HTMLElement} */(elt.cloneNode(true));
 }
 
@@ -2194,7 +2195,7 @@ function setVolumeButton(muted, button, slider) {
     }
 
     if(!(slider instanceof HTMLInputElement))
-        throw new Error("Couldn't find volume slider");
+        throw new Error("Не удалось найти ползунок volume");
     slider.disabled = muted;
 }
 
@@ -2219,7 +2220,7 @@ function registerControlHandlers(localId, media, container) {
             try {
                 let c = serverConnection.findByLocalId(localId);
                 if(!c)
-                    throw new Error('Closing unknown stream');
+                    throw new Error('Закрытие неизвестного потока данных');
                 c.close();
             } catch(e) {
                 console.error(e);
@@ -2255,7 +2256,7 @@ function registerControlHandlers(localId, media, container) {
                 if(media.requestPictureInPicture) {
                     media.requestPictureInPicture();
                 } else {
-                    displayWarning('Picture in Picture not supported.');
+                    displayWarning('Картинка в картинке не поддерживается.');
                 }
             };
         } else {
@@ -2277,7 +2278,7 @@ function registerControlHandlers(localId, media, container) {
                     /** @ts-ignore */
                     media.webkitRequestFullscreen();
                 } else {
-                    displayWarning('Full screen not supported!');
+                    displayWarning('Полноэкранный режим не поддерживается!');
                 }
             };
         } else {
@@ -2293,7 +2294,7 @@ function delMedia(localId) {
     let mediadiv = document.getElementById('peers');
     let peer = document.getElementById('peer-' + localId);
     if(!peer)
-        throw new Error('Removing unknown media');
+        throw new Error('Удаление неизвестного медиа');
 
     let media = /** @type{HTMLVideoElement} */
         (document.getElementById('media-' + localId));
@@ -2336,7 +2337,7 @@ function setMediaStatus(c) {
         let from = c.username ?
             `from user ${c.username}` :
             'from anonymous user';
-        displayWarning(`Cannot receive media ${from}, still trying...`);
+        displayWarning(`Не удается получить медиафайл ${from}, все еще пытаемся...`);
     }
 }
 
@@ -2425,7 +2426,7 @@ function stringCompare(a, b) {
 function dateFromInput(v) {
     let d = new Date(v);
     if(d.toString() === 'Invalid Date')
-        throw new Error('Invalid date');
+        throw new Error('Некорректная дата');
     return d;
 }
 
@@ -2442,7 +2443,7 @@ function inviteMenu() {
     let d = /** @type {HTMLDialogElement} */
         (document.getElementById('invite-dialog'));
     if(!('HTMLDialogElement' in window) || !d.showModal) {
-        displayError("This browser doesn't support modal dialogs");
+        displayError("Этот браузер не поддерживает модальные диалоги");
         return;
     }
     d.returnValue = '';
@@ -2465,7 +2466,7 @@ function inviteMenu() {
 
 document.getElementById('invite-dialog').onclose = function(e) {
     if(!(this instanceof HTMLDialogElement))
-        throw new Error('Unexpected type for this');
+        throw new Error('Нестандартный тип для этих данных');
     let dialog = /** @type {HTMLDialogElement} */(this);
     if(dialog.returnValue !== 'invite')
         return;
@@ -2477,7 +2478,7 @@ document.getElementById('invite-dialog').onclose = function(e) {
         try {
             notBefore = dateFromInput(nb.value);
         } catch(e) {
-            displayError(`Couldn't parse ${nb.value}: ${e}`);
+            displayError(`Не удалось разобрать ${nb.value}: ${e}`);
             return;
         }
     }
@@ -2487,7 +2488,7 @@ document.getElementById('invite-dialog').onclose = function(e) {
         try {
             expires = dateFromInput(ex.value);
         } catch(e) {
-            displayError(`Couldn't parse ${nb.value}: ${e}`);
+            displayError(`Не удалось разобрать ${nb.value}: ${e}`);
             return;
         }
     }
@@ -2506,56 +2507,56 @@ document.getElementById('invite-dialog').onclose = function(e) {
  */
 function userMenu(elt) {
     if(!elt.id.startsWith('user-'))
-        throw new Error('Unexpected id for user menu');
+        throw new Error('Неожиданный идентификатор для меню пользователя');
     let id = elt.id.slice('user-'.length);
     let user = serverConnection.users[id];
     if(!user)
-        throw new Error("Couldn't find user")
+        throw new Error("Не удалось найти user")
     let items = [];
     if(id === serverConnection.id) {
         let mydata = serverConnection.users[serverConnection.id].data;
         if(mydata['raisehand'])
-            items.push({label: 'Unraise hand', onClick: () => {
+            items.push({label: 'Опустить руку', onClick: () => {
                 serverConnection.userAction(
                     'setdata', serverConnection.id, {'raisehand': null},
                 );
             }});
         else
-            items.push({label: 'Raise hand', onClick: () => {
+            items.push({label: 'Поднять руку', onClick: () => {
                 serverConnection.userAction(
                     'setdata', serverConnection.id, {'raisehand': true},
                 );
             }});
         if(serverConnection.version !== "1" &&
            serverConnection.permissions.indexOf('token') >= 0) {
-            items.push({label: 'Invite user', onClick: () => {
+            items.push({label: 'Создать приглашение', onClick: () => {
                 inviteMenu();
             }});
         }
         if(serverConnection.permissions.indexOf('present') >= 0 && canFile())
-            items.push({label: 'Broadcast file', onClick: presentFile});
-        items.push({label: 'Restart media', onClick: renegotiateStreams});
+            items.push({label: 'Транслировать файл', onClick: presentFile});
+        items.push({label: 'Перезапустить медиа', onClick: renegotiateStreams});
     } else {
-        items.push({label: 'Send file', onClick: () => {
+        items.push({label: 'Передать файл', onClick: () => {
             sendFile(id);
         }});
         if(serverConnection.permissions.indexOf('op') >= 0) {
             items.push({type: 'seperator'}); // sic
             if(user.permissions.indexOf('present') >= 0)
-                items.push({label: 'Forbid presenting', onClick: () => {
+                items.push({label: 'Запретить выступление', onClick: () => {
                     serverConnection.userAction('unpresent', id);
                 }});
             else
-                items.push({label: 'Allow presenting', onClick: () => {
+                items.push({label: 'Разрешить выступление', onClick: () => {
                     serverConnection.userAction('present', id);
                 }});
-            items.push({label: 'Mute', onClick: () => {
+            items.push({label: 'Отключить микрофон', onClick: () => {
                 serverConnection.userMessage('mute', id);
             }});
-            items.push({label: 'Kick out', onClick: () => {
+            items.push({label: 'Выгнать пользователя', onClick: () => {
                 serverConnection.userAction('kick', id);
             }});
-            items.push({label: 'Identify', onClick: () => {
+            items.push({label: 'Идентифицировать', onClick: () => {
                 serverConnection.userAction('identify', id);
             }});
         }
@@ -2579,7 +2580,7 @@ function addUser(id, userinfo) {
     user.addEventListener('click', function(e) {
         let elt = e.target;
         if(!elt || !(elt instanceof HTMLElement))
-            throw new Error("Couldn't find user div");
+            throw new Error("Не удалось найти user div");
         userMenu(elt);
     });
 
@@ -2697,11 +2698,11 @@ function displayUsername() {
     let present = serverConnection.permissions.indexOf('present') >= 0;
     let text = '';
     if(op && present)
-        text = '(op, presenter)';
+        text = '(оператор, участник)';
     else if(op)
-        text = 'operator';
+        text = 'оператор';
     else if(present)
-        text = 'presenter';
+        text = 'участник';
     document.getElementById('permspan').textContent = text;
 }
 
@@ -2773,7 +2774,7 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
             setVisibility('passwordform', false);
         } else {
             token = null;
-            displayError('The server said: ' + message);
+            displayError('Сервер ответил: ' + message);
         }
         closeSafariStream();
         this.close();
@@ -2819,7 +2820,7 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
         break;
     default:
         token = null;
-        displayError('Unknown join message');
+        displayError('Неизвестное сообщение о присоединении');
         closeSafariStream();
         this.close();
         return;
@@ -2827,14 +2828,14 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
 
     let input = /** @type{HTMLTextAreaElement} */
         (document.getElementById('input'));
-    input.placeholder = 'Type /help for help';
+    input.placeholder = '/help – для справки';
     setTimeout(() => {input.placeholder = '';}, 8000);
 
     if(status.locked)
-        displayWarning('This group is locked');
+        displayWarning('Данная группа заблокирована');
 
     if(typeof RTCPeerConnection === 'undefined')
-        displayWarning("This browser doesn't support WebRTC");
+        displayWarning("Данный браузер не поддерживает WebRTC");
     else
         this.request(mapRequest(getSettings().request));
 
@@ -2843,10 +2844,17 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
        serverConnection.permissions.indexOf('present') >= 0 &&
        !findUpMedia('camera')) {
         if(present) {
-            if(present === 'mike')
-                updateSettings({video: ''});
-            else if(present === 'both')
+            if(present === 'both') {
                 delSetting('video');
+                setLocalMute(false, true);
+            }
+            else if(present === 'cam')
+                setLocalMute(true, true);
+            else if(present === 'mike') {
+                updateSettings({video: ''});
+                setLocalMute(false, true);
+            }
+
             reflectSettings();
 
             let button = getButtonElement('presentbutton');
@@ -2858,7 +2866,7 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
             }
         } else {
             displayMessage(
-                "Press Enable to enable your camera or microphone"
+                "Нажмите кнопку Включить, чтобы включить камеру или микрофон"
             );
         }
     }
@@ -2872,23 +2880,23 @@ function gotFileTransfer(f) {
     let p = document.createElement('p');
     if(f.up)
         p.textContent =
-        `We have offered to send a file called "${f.name}" ` +
-        `to user ${f.username}.`;
+        `Мы отправили файл с именем "${f.name}" ` +
+        `пользователю ${f.username}.`;
     else
         p.textContent =
-        `User ${f.username} offered to send us a file ` +
-        `called "${f.name}" of size ${f.size}.`
+        `Пользователь ${f.username} посылает нам файл ` +
+        `с именем "${f.name}" и размером ${f.size}.`
     let bno = null, byes = null;
     if(!f.up) {
         byes = document.createElement('button');
-        byes.textContent = 'Accept';
+        byes.textContent = 'Принять';
         byes.onclick = function(e) {
             f.receive();
         };
         byes.id = "byes-" + f.fullid();
     }
     bno = document.createElement('button');
-    bno.textContent = f.up ? 'Cancel' : 'Reject';
+    bno.textContent = f.up ? 'Отменить' : 'Отклонить';
     bno.onclick = function(e) {
         f.cancel();
     };
@@ -2897,7 +2905,7 @@ function gotFileTransfer(f) {
     status.id = 'status-' + f.fullid();
     if(!f.up) {
         status.textContent =
-            '(Choosing "Accept" will disclose your IP address.)';
+            '(При выборе "Принять" будет раскрыт ваш IP-адрес.)';
     }
     let statusp = document.createElement('p');
     statusp.id = 'statusp-' + f.fullid();
@@ -2926,12 +2934,12 @@ function gotFileTransfer(f) {
 function setFileStatus(f, status, value) {
     let statuselt = document.getElementById('status-' + f.fullid());
     if(!statuselt)
-        throw new Error("Couldn't find statusp");
+        throw new Error("Не удалось найти statusp");
     statuselt.textContent = status;
     if(value) {
         let progress = document.getElementById('progress-' + f.fullid());
          if(!progress || !(progress instanceof HTMLProgressElement))
-            throw new Error("Couldn't find progress element");
+            throw new Error("Не удалось найти элемент progress");
         progress.value = value;
         let label = document.getElementById('progresstext-' + f.fullid());
         let percent = Math.round(100 * value / progress.max);
@@ -2946,7 +2954,7 @@ function setFileStatus(f, status, value) {
 function createFileProgress(f, max) {
     let statusp = document.getElementById('statusp-' + f.fullid());
     if(!statusp)
-        throw new Error("Couldn't find status div");
+        throw new Error("Не удалось найти status div");
     /** @type HTMLProgressElement */
     let progress = document.createElement('progress');
     progress.id = 'progress-' + f.fullid();
@@ -2969,7 +2977,7 @@ function createFileProgress(f, max) {
 function delFileStatusButtons(f, delyes, delno, delprogress) {
     let div = document.getElementById('file-' + f.fullid());
     if(!div)
-        throw new Error("Couldn't find file div");
+        throw new Error("Не удалось найти file div");
     if(delyes) {
         let byes = document.getElementById('byes-' + f.fullid())
         if(byes)
@@ -3004,15 +3012,15 @@ function gotFileTransferEvent(state, data) {
         break;
     case 'connecting':
         delFileStatusButtons(f, true, false);
-        setFileStatus(f, 'Connecting...');
+        setFileStatus(f, 'Подключение...');
         createFileProgress(f, f.size);
         break;
     case 'connected':
-        setFileStatus(f, f.up ? 'Sending...' : 'Receiving...', f.datalen);
+        setFileStatus(f, f.up ? 'Отправка...' : 'Получение...', f.datalen);
         break;
     case 'done':
         delFileStatusButtons(f, true, true, true);
-        setFileStatus(f, 'Done.');
+        setFileStatus(f, 'Выполнено.');
         if(!f.up) {
             let url = URL.createObjectURL(data);
             let a = document.createElement('a');
@@ -3027,9 +3035,9 @@ function gotFileTransferEvent(state, data) {
     case 'cancelled':
         delFileStatusButtons(f, true, true, true);
         if(data)
-            setFileStatus(f, `Cancelled: ${data.toString()}.`);
+            setFileStatus(f, `Отменено: ${data.toString()}.`);
         else
-            setFileStatus(f, 'Cancelled.');
+            setFileStatus(f, 'Отменено.');
         break;
     case 'closed':
         break;
@@ -3061,7 +3069,7 @@ function gotUserMessage(id, dest, username, time, privileged, kind, error, messa
             return;
         }
         let from = id ? (username || 'Anonymous') : 'The Server';
-        displayError(`${from} said: ${message}`, kind);
+        displayError(`${from} сказал: ${message}`, kind);
         break;
     case 'mute':
         if(!privileged) {
@@ -3069,8 +3077,8 @@ function gotUserMessage(id, dest, username, time, privileged, kind, error, messa
             return;
         }
         setLocalMute(true, true);
-        let by = username ? ' by ' + username : '';
-        displayWarning(`You have been muted${by}`);
+        let by = username ? ' пользователь ' + username : '';
+        displayWarning(`Вам отключил микрофон${by}`);
         break;
     case 'clearchat': {
         if(!privileged) {
@@ -3088,11 +3096,11 @@ function gotUserMessage(id, dest, username, time, privileged, kind, error, messa
             return;
         }
         if(error) {
-            displayError(`Token operation failed: ${message}`)
+            displayError(`Не удалось выполнить операцию с токеном: ${message}`)
             return
         }
         if(typeof message != 'object') {
-            displayError('Unexpected type for token');
+            displayError('Неожиданный тип для токена');
             return;
         }
         let f = formatToken(message, false);
@@ -3100,7 +3108,7 @@ function gotUserMessage(id, dest, username, time, privileged, kind, error, messa
         if('share' in navigator) {
             try {
                 navigator.share({
-                    title: `Invitation to Galene group ${message.group}`,
+                    title: `Приглашение в группу ${message.group}`,
                     text: f[0],
                     url: f[1],
                 });
@@ -3115,7 +3123,7 @@ function gotUserMessage(id, dest, username, time, privileged, kind, error, messa
             return;
         }
         if(error) {
-            displayError(`Token operation failed: ${message}`)
+            displayError(`Не удалось выполнить операцию с токеном: ${message}`)
             return
         }
         let s = '';
@@ -3155,34 +3163,34 @@ function formatToken(token, details) {
     url.search = params.toString();
     let foruser = '', by = '', togroup = '';
     if(token.username)
-        foruser = ` for user ${token.username}`;
+        foruser = ` для пользователя ${token.username}`;
     if(details) {
         if(token.issuedBy)
-            by = ' issued by ' + token.issuedBy;
+            by = ' выпущено ' + token.issuedBy;
         if(token.issuedAt) {
             if(by === '')
-                by = ' issued at ' + token.issuedAt;
+                by = ' выпущено ' + token.issuedAt;
             else
-                by = by + ' at ' + (new Date(token.issuedAt)).toLocaleString();
+                by = by + ' ' + (new Date(token.issuedAt)).toLocaleString();
         }
     } else {
         if(token.group)
-            togroup = ' to group ' + token.group;
+            togroup = ' в группу ' + token.group;
     }
     let since = '';
     if(token["not-before"])
-        since = ` since ${(new Date(token['not-before'])).toLocaleString()}`
+        since = ` с ${(new Date(token['not-before'])).toLocaleString()}`
     /** @type{Date} */
     let expires = null;
     let until = '';
     if(token.expires) {
         expires = new Date(token.expires)
-        until = ` until ${expires.toLocaleString()}`;
+        until = ` до ${expires.toLocaleString()}`;
     }
     return [
         (expires && (expires >= new Date())) ?
-            `Invitation${foruser}${togroup}${by} valid${since}${until}` :
-            `Expired invitation${foruser}${togroup}${by}`,
+            `Приглашение${foruser}${togroup}${by} действительно${since}${until}` :
+            `Просроченное приглашение${foruser}${togroup}${by}`,
         url.toString(),
     ];
 }
@@ -3282,7 +3290,7 @@ function addToChatbox(id, peerId, dest, nick, time, privileged, history, kind, m
                 return;
             let elt = e.currentTarget;
             if(!elt || !(elt instanceof HTMLElement))
-                throw new Error("Couldn't find chat message div");
+                throw new Error("Не удалось найти message div чата");
             chatMessageMenu(elt);
         });
     }
@@ -3294,7 +3302,7 @@ function addToChatbox(id, peerId, dest, nick, time, privileged, history, kind, m
     } else if(typeof message === 'string') {
         body = formatText(message);
     } else {
-        throw new Error('Cannot add element to chatbox');
+        throw new Error('Невозможно добавить элемент в chatbox');
     }
 
     if(kind !== 'me') {
@@ -3379,22 +3387,22 @@ function chatMessageMenu(elt) {
 
     let items = [];
     if(messageId)
-        items.push({label: 'Delete message', onClick: () => {
+        items.push({label: 'Удалить сообщение', onClick: () => {
             serverConnection.groupAction('clearchat', {
                 id: messageId,
                 userId: peerId,
             });
         }});
-    items.push({label: `Delete all from ${u}`,
+    items.push({label: `Удалить все с ${u}`,
                 onClick: () => {
                     serverConnection.groupAction('clearchat', {
                         userId: peerId,
                     });
                 }});
-    items.push({label: `Identify ${u}`, onClick: () => {
+    items.push({label: `Идентифицировать ${u}`, onClick: () => {
         serverConnection.userAction('identify', peerId);
     }});
-    items.push({label: `Kick out ${u}`, onClick: () => {
+    items.push({label: `Выгнать ${u}`, onClick: () => {
         serverConnection.userAction('kick', peerId);
     }});
 
@@ -3497,18 +3505,18 @@ function operatorPredicate() {
     if(serverConnection && serverConnection.permissions &&
        serverConnection.permissions.indexOf('op') >= 0)
         return null;
-    return 'You are not an operator';
+    return 'Вы не являетесь оператором';
 }
 
 function recordingPredicate() {
     if(serverConnection && serverConnection.permissions &&
        serverConnection.permissions.indexOf('record') >= 0)
         return null;
-    return 'You are not allowed to record';
+    return 'Вам не разрешено проводить запись';
 }
 
 commands.help = {
-    description: 'display this help',
+    description: 'отобразить эту справку',
     f: (c, r) => {
         /** @type {string[]} */
         let cs = [];
@@ -3527,7 +3535,7 @@ commands.help = {
 commands.me = {
     f: (c, r) => {
         // handled as a special case
-        throw new Error("this shouldn't happen");
+        throw new Error("этого не должно происходить");
     }
 };
 
@@ -3561,17 +3569,17 @@ commands.unset = {
 };
 
 commands.leave = {
-    description: "leave group",
+    description: "покинуть группу",
     f: (c, r) => {
         if(!serverConnection)
-            throw new Error('Not connected');
+            throw new Error('Не подключен');
         serverConnection.close();
     }
 };
 
 commands.clear = {
     predicate: operatorPredicate,
-    description: 'clear the chat history',
+    description: 'очистить историю',
     f: (c, r) => {
         serverConnection.groupAction('clearchat');
     }
@@ -3579,7 +3587,7 @@ commands.clear = {
 
 commands.lock = {
     predicate: operatorPredicate,
-    description: 'lock this group',
+    description: 'заблокировать данную группу',
     parameters: '[message]',
     f: (c, r) => {
         serverConnection.groupAction('lock', r);
@@ -3588,7 +3596,7 @@ commands.lock = {
 
 commands.unlock = {
     predicate: operatorPredicate,
-    description: 'unlock this group, revert the effect of /lock',
+    description: 'разблокировать данную группу, обратный эффект от /lock',
     f: (c, r) => {
         serverConnection.groupAction('unlock');
     }
@@ -3596,7 +3604,7 @@ commands.unlock = {
 
 commands.record = {
     predicate: recordingPredicate,
-    description: 'start recording',
+    description: 'начать запись',
     f: (c, r) => {
         serverConnection.groupAction('record');
     }
@@ -3604,7 +3612,7 @@ commands.record = {
 
 commands.unrecord = {
     predicate: recordingPredicate,
-    description: 'stop recording',
+    description: 'остановить запись',
     f: (c, r) => {
         serverConnection.groupAction('unrecord');
     }
@@ -3612,7 +3620,7 @@ commands.unrecord = {
 
 commands.subgroups = {
     predicate: operatorPredicate,
-    description: 'list subgroups',
+    description: 'список подгрупп',
     f: (c, r) => {
         serverConnection.groupAction('subgroups');
     }
@@ -3642,24 +3650,24 @@ function parseExpiration(s) {
     if(e) {
         let unit = units[e[2]];
         if(!unit)
-            throw new Error(`Couldn't find unit ${e[2]}`);
+            throw new Error(`Не удалось обнаружить устройство ${e[2]}`);
         return parseInt(e[1]) * unit;
     }
     let d = new Date(s);
     if(d.toString() === 'Invalid Date')
-        throw new Error("Couldn't parse expiration date");
+        throw new Error("Не удалось разобрать дату истечения срока действия");
     return d;
 }
 
 function makeTokenPredicate() {
     return (serverConnection.permissions.indexOf('token') < 0 ?
-            "You don't have permission to create tokens" : null);
+            "У вас нет прав на создание токенов" : null);
 }
 
 function editTokenPredicate() {
     return (serverConnection.permissions.indexOf('token') < 0 ||
             serverConnection.permissions.indexOf('op') < 0 ?
-            "You don't have permission to edit or list tokens" : null);
+            "У вас нет прав редактировать или просматривать токены" : null);
 }
 
 /**
@@ -3693,7 +3701,7 @@ function makeToken(template) {
 
 commands.invite = {
     predicate: makeTokenPredicate,
-    description: "create an invitation link",
+    description: "создать ссылку для приглашения",
     parameters: "[username] [expiration]",
     f: (c, r) => {
         let p = parseCommand(r);
@@ -3717,13 +3725,13 @@ function parseToken(t) {
     } else if(!/^https?:\/\//.exec(t)) {
         return t
     } else {
-        throw new Error("Couldn't parse link");
+        throw new Error("Не удалось обработать ссылку");
     }
 }
 
 commands.reinvite = {
     predicate: editTokenPredicate,
-    description: "extend an invitation link",
+    description: "продлить ссылку на приглашение",
     parameters: "link [expiration]",
     f: (c, r) => {
         let p = parseCommand(r);
@@ -3739,7 +3747,7 @@ commands.reinvite = {
 
 commands.revoke = {
     predicate: editTokenPredicate,
-    description: "revoke an invitation link",
+    description: "отозвать ссылку на приглашение",
     parameters: "link",
     f: (c, r) => {
         let token = parseToken(r);
@@ -3752,7 +3760,7 @@ commands.revoke = {
 
 commands.listtokens = {
     predicate: editTokenPredicate,
-    description: "list invitation links",
+    description: "список ссылок на приглашения",
     f: (c, r) => {
         serverConnection.groupAction('listtokens');
     }
@@ -3766,7 +3774,7 @@ function renegotiateStreams() {
 }
 
 commands.renegotiate = {
-    description: 'renegotiate media streams',
+    description: 'пересогласование медиа-потоков',
     f: (c, r) => {
         renegotiateStreams();
     }
@@ -3779,7 +3787,7 @@ commands.replace = {
 };
 
 commands.stopshare = {
-    description: 'stop screen share',
+    description: 'остановить демонстрацию экрана',
     f: (c, r) => {
         closeUpMedia('screenshare');
     }
@@ -3836,14 +3844,14 @@ function findUserId(user) {
 
 commands.msg = {
     parameters: 'user message',
-    description: 'send a private message',
+    description: 'отправить личное сообщение',
     f: (c, r) => {
         let p = parseCommand(r);
         if(!p[0])
-            throw new Error('/msg requires parameters');
+            throw new Error('/msg требует наличия параметров');
         let id = findUserId(p[0]);
         if(!id)
-            throw new Error(`Unknown user ${p[0]}`);
+            throw new Error(`Неизвестный пользователь ${p[0]}`);
         serverConnection.chat('', id, p[1]);
         addToChatbox(serverConnection.id, null, id, serverConnection.username,
                      new Date(), false, false, '', p[1]);
@@ -3857,88 +3865,88 @@ commands.msg = {
 function userCommand(c, r) {
     let p = parseCommand(r);
     if(!p[0])
-        throw new Error(`/${c} requires parameters`);
+        throw new Error(`/${c} требует наличия параметров`);
     let id = findUserId(p[0]);
     if(!id)
-        throw new Error(`Unknown user ${p[0]}`);
+        throw new Error(`Неизвестный пользователь ${p[0]}`);
     serverConnection.userAction(c, id, p[1]);
 }
 
 function userMessage(c, r) {
     let p = parseCommand(r);
     if(!p[0])
-        throw new Error(`/${c} requires parameters`);
+        throw new Error(`/${c} требует наличия параметров`);
     let id = findUserId(p[0]);
     if(!id)
-        throw new Error(`Unknown user ${p[0]}`);
+        throw new Error(`Неизвестный пользователь ${p[0]}`);
     serverConnection.userMessage(c, id, p[1]);
 }
 
 commands.kick = {
     parameters: 'user [message]',
-    description: 'kick out a user',
+    description: 'выгнать пользователя',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.identify = {
     parameters: 'user [message]',
-    description: 'identify a user',
+    description: 'идентифицировать пользователя',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.op = {
     parameters: 'user',
-    description: 'give operator status',
+    description: 'присвоить статус оператора',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.unop = {
     parameters: 'user',
-    description: 'revoke operator status',
+    description: 'отозвать статус оператора',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.present = {
     parameters: 'user',
-    description: 'give user the right to present',
+    description: 'предоставить пользователю право на выступление',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.unpresent = {
     parameters: 'user',
-    description: 'revoke the right to present',
+    description: 'отозвать право на выступление',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.shutup = {
     parameters: 'user',
-    description: 'revoke the right to send chat messages',
+    description: 'лишить права отправлять сообщения в чате',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.unshutup = {
     parameters: 'user',
-    description: 'give the right to send chat messages',
+    description: 'дать право отправлять сообщения в чате',
     predicate: operatorPredicate,
     f: userCommand,
 };
 
 commands.mute = {
     parameters: 'user',
-    description: 'mute a remote user',
+    description: 'отключить звук у пользователя',
     predicate: operatorPredicate,
     f: userMessage,
 };
 
 commands.muteall = {
-    description: 'mute all remote users',
+    description: 'отключить звук у всех пользователей',
     predicate: operatorPredicate,
     f: (c, r) => {
         serverConnection.userMessage('mute', null, null, true);
@@ -3947,7 +3955,7 @@ commands.muteall = {
 
 commands.warn = {
     parameters: 'user message',
-    description: 'send a warning to a user',
+    description: 'отправить пользователю предупреждение',
     predicate: operatorPredicate,
     f: (c, r) => {
         userMessage('warning', r);
@@ -3956,17 +3964,17 @@ commands.warn = {
 
 commands.wall = {
     parameters: 'message',
-    description: 'send a warning to all users',
+    description: 'отправить предупреждение всем пользователям',
     predicate: operatorPredicate,
     f: (c, r) => {
         if(!r)
-            throw new Error('empty message');
+            throw new Error('пустое сообщение');
         serverConnection.userMessage('warning', '', r);
     },
 };
 
 commands.raise = {
-    description: 'raise hand',
+    description: 'поднять руку',
     f: (c, r) => {
         serverConnection.userAction(
             "setdata", serverConnection.id, {"raisehand": true},
@@ -3975,7 +3983,7 @@ commands.raise = {
 }
 
 commands.unraise = {
-    description: 'unraise hand',
+    description: 'опустить руку',
     f: (c, r) => {
         serverConnection.userAction(
             "setdata", serverConnection.id, {"raisehand": null},
@@ -3999,7 +4007,7 @@ function presentFile() {
     input.accept="audio/*,video/*";
     input.onchange = function(e) {
         if(!(this instanceof HTMLInputElement))
-            throw new Error('Unexpected type for this');
+            throw new Error('Нестандартный тип для этих данных');
         let files = this.files;
         for(let i = 0; i < files.length; i++) {
             addFileMedia(files[i]).catch(e => {
@@ -4012,16 +4020,16 @@ function presentFile() {
 }
 
 commands.presentfile = {
-    description: 'broadcast a video or audio file',
+    description: 'транслировать видео- или аудиофайл',
     f: (c, r) => {
         presentFile();
     },
     predicate: () => {
         if(!canFile())
-            return 'Your browser does not support presenting arbitrary files';
+            return 'Ваш браузер не поддерживает презентацию произвольных файлов';
         if(!serverConnection || !serverConnection.permissions ||
            serverConnection.permissions.indexOf('present') < 0)
-            return 'You are not authorised to present.';
+            return 'У вас нет прав на выступление.';
         return null;
     }
 };
@@ -4035,7 +4043,7 @@ function sendFile(id) {
     input.type = 'file';
     input.onchange = function(e) {
         if(!(this instanceof HTMLInputElement))
-            throw new Error('Unexpected type for this');
+            throw new Error('Нестандартный тип для этих данных');
         let files = this.files;
         for(let i = 0; i < files.length; i++) {
             try {
@@ -4051,14 +4059,14 @@ function sendFile(id) {
 
 commands.sendfile = {
     parameters: 'user',
-    description: 'send a file (this will disclose your IP address)',
+    description: 'отправить файл (при этом будет раскрыт ваш IP-адрес)',
     f: (c, r) => {
         let p = parseCommand(r);
         if(!p[0])
-            throw new Error(`/${c} requires parameters`);
+            throw new Error(`/${c} требует наличия параметров`);
         let id = findUserId(p[0]);
         if(!id)
-            throw new Error(`Unknown user ${p[0]}`);
+            throw new Error(`Неизвестный пользователь ${p[0]}`);
         sendFile(id);
     },
 };
@@ -4070,7 +4078,7 @@ commands.sendfile = {
  */
 async function relayTest() {
     if(!serverConnection)
-        throw new Error('not connected');
+        throw new Error('не подключен');
     let conf = Object.assign({}, serverConnection.getRTCConfiguration());
     conf.iceTransportPolicy = 'relay';
     let pc1 = new RTCPeerConnection(conf);
@@ -4096,13 +4104,13 @@ async function relayTest() {
                 d2.onmessage = e => {
                     let t = parseInt(e.data);
                     if(isNaN(t))
-                        reject(new Error('corrupt data'));
+                        reject(new Error('поврежденные данные'));
                     else
                         resolve(Date.now() - t);
                 }
             }
 
-            setTimeout(() => reject(new Error('timeout')), 5000);
+            setTimeout(() => reject(new Error('таймаут')), 5000);
         })
     } finally {
         pc1.close();
@@ -4112,14 +4120,14 @@ async function relayTest() {
 
 commands['relay-test'] = {
     f: async (c, r) => {
-        localMessage('Relay test in progress...');
+        localMessage('Проводится тестирование релея...');
         try {
             let s = Date.now();
             let rtt = await relayTest();
             let e = Date.now();
-            localMessage(`Relay test successful in ${e-s}ms, RTT ${rtt}ms`);
+            localMessage(`Тестирование релея успешно завершено за ${e-s}мс, RTT ${rtt}мс`);
         } catch(e) {
-            localMessage(`Relay test failed: ${e}`);
+            localMessage(`Тестирование релея прошло неудачно: ${e}`);
         }
     }
 }
@@ -4156,7 +4164,7 @@ function handleInput() {
             } else {
                 let c = commands[cmd];
                 if(!c) {
-                    displayError(`Uknown command /${cmd}, type /help for help`);
+                    displayError(`Неизвестная команда /${cmd}, введите /help для получения справки`);
                     return;
                 }
                 if(c.predicate) {
@@ -4181,7 +4189,7 @@ function handleInput() {
     }
 
     if(!serverConnection || !serverConnection.socket) {
-        displayError("Not connected.");
+        displayError("Не подключен.");
         return;
     }
 
@@ -4403,7 +4411,7 @@ async function serverConnect() {
         await serverConnection.connect(url);
     } catch(e) {
         console.error(e);
-        displayError(e.message ? e.message : "Couldn't connect to " + url);
+        displayError(e.message ? e.message : "Не удалось подключиться к " + url);
     }
 }
 
@@ -4415,7 +4423,7 @@ async function start() {
         groupStatus = await r.json()
     } catch(e) {
         console.error(e);
-        displayWarning("Couldn't fetch status: " + e);
+        displayWarning("Не удалось получить статус: " + e);
         groupStatus = {};
     }
 

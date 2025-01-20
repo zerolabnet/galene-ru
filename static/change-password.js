@@ -26,12 +26,12 @@ document.getElementById('passwordform').onsubmit = async function(e) {
     let parms = new URLSearchParams(window.location.search);
     let group = parms.get('group');
     if(!group) {
-        displayError("Couldn't determine group");
+        displayError("Не удалось определить группу");
         return;
     }
     let user = parms.get('username');
     if(!user) {
-        displayError("Couldn't determine username");
+        displayError("Не удалось определить имя пользователя");
         return;
     }
 
@@ -39,7 +39,7 @@ document.getElementById('passwordform').onsubmit = async function(e) {
     let new1 = document.getElementById('new1').value;
     let new2 = document.getElementById('new2').value;
     if(new1 !== new2) {
-        displayError("Passwords don't match.");
+        displayError("Пароли не совпадают.");
         return;
     }
 
@@ -50,7 +50,7 @@ document.getElementById('passwordform').onsubmit = async function(e) {
         document.getElementById('new2').value = '';
         displayError(null);
         document.getElementById('message').textContent =
-            'Password successfully changed.';
+            'Пароль успешно изменен.';
     } catch(e) {
         displayError(e.toString());
     }
