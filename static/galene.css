@@ -1389,11 +1389,11 @@ header .collapse:hover {
 }
 
 #invite-dialog {
-    border: solid 2px #610a86;
+    border: solid 2px #57a15d;
 }
 
 #invite-dialog button {
-    background-color: #3355ff;
+    background-color: #28a645;
     color: white;
     border-radius: .5em;
     padding: .5em;
@@ -1405,7 +1405,7 @@ header .collapse:hover {
 }
 
 #invite-dialog button:hover {
-   background-color: #0022ff;
+   background-color: #218838;
 }
 
 #invite-dialog input {
