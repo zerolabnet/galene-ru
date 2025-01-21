@@ -1303,7 +1303,7 @@ async function workerSendReceive(worker, message, transfer) {
  */
 let filters = {
     'mirror-h': {
-        description: "отразить горизонтально",
+        description: "Отразить горизонтально",
         draw: async function(src, ctx) {
             if(!(ctx instanceof CanvasRenderingContext2D))
                 throw new Error('неправильный тип контекста');
@@ -1319,7 +1319,7 @@ let filters = {
         },
     },
     'mirror-v': {
-        description: "отразить вертикально",
+        description: "Отразить вертикально",
         draw: async function(src, ctx) {
             if(!(ctx instanceof CanvasRenderingContext2D))
                 throw new Error('неправильный тип контекста');
@@ -1335,7 +1335,7 @@ let filters = {
         },
     },
     'background-blur': {
-        description: 'размытие фона',
+        description: 'Размытие фона',
         predicate: async function() {
             let r = await fetch('/third-party/tasks-vision/vision_bundle.mjs', {
                 method: 'HEAD',
