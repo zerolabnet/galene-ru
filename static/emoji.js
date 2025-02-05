@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const emojiButtons = document.querySelectorAll('.emoji');
   const additionalEmojiButton = document.getElementById("additionalEmojiButton");
   const additionalEmojiPopup = document.getElementById("additionalEmojiPopup");
+  const closeChatButton = document.getElementById("close-chat");
 
   function insertEmoji(event) {
     if (event.target.classList.contains('emoji')) {
@@ -39,4 +40,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   setupEmojiButtons();
+
+  if (closeChatButton) {
+    closeChatButton.click();
+  }
+
 });
