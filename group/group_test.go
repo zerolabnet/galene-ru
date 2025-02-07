@@ -11,6 +11,29 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
+func TestConstantTimeCompare(t *testing.T) {
+	tests := []struct {
+		a, b string
+	}{
+		{"", ""},
+		{"a", "a"},
+		{"a", "b"},
+		{"foo", "foo"},
+		{"foo", "bar"},
+		{"foo", "foo1"},
+		{"foo1", "foo"},
+	}
+
+	for _, test := range tests {
+		e := constantTimeCompare(test.a, test.b)
+		if e != (test.a == test.b) {
+			t.Errorf("constantTimeCompare(%v, %v): got %v",
+				test.a, test.b, e,
+			)
+		}
+	}
+}
+
 func TestGroup(t *testing.T) {
 	groups.groups = nil
 	Add("group", &Description{})
